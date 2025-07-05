@@ -1,0 +1,281 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model bookings {
+  id          Int        @id @default(autoincrement())
+  employee_id Int?
+  shift_id    Int?
+  route_id    Int?
+  pickup_time DateTime?  @db.Time(6)
+  status      String?    @db.VarChar
+  employees   employees? @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  routes      routes?    @relation(fields: [route_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  shifts      shifts?    @relation(fields: [shift_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([id], map: "ix_bookings_id")
+}
+
+model companies {
+  id                Int                 @id @default(autoincrement())
+  name              String              @db.VarChar
+  phone_no          String              @unique @db.VarChar
+  email             String?             @unique @db.VarChar
+  address           String
+  longitude         String?             @db.VarChar
+  latitude          String?             @db.VarChar
+  is_active         Boolean?
+  is_deleted        Boolean?
+  created_at        DateTime?           @default(now()) @db.Timestamp(6)
+  drivers           drivers[]
+  employees         employees[]
+  holidays          holidays[]
+  shifts            shifts[]
+  teams             teams[]
+  user_role_company user_role_company[]
+  users             users[]
+  vehicle_types     vehicle_types[]
+  vehicles          vehicles[]
+  vendors           vendors[]
+
+  @@index([id], map: "ix_companies_id")
+}
+
+model cutoff_windows {
+  id          Int      @id @default(autoincrement())
+  shift_id    Int?
+  cutoff_time DateTime @db.Time(6)
+  shifts      shifts?  @relation(fields: [shift_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([id], map: "ix_cutoff_windows_id")
+}
+
+model driver_vehicles {
+  id         Int      @id @default(autoincrement())
+  driver_id  Int
+  vehicle_id Int
+  drivers    drivers  @relation(fields: [driver_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vehicles   vehicles @relation(fields: [vehicle_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([id], map: "ix_driver_vehicles_id")
+}
+
+model drivers {
+  id              Int               @id @default(autoincrement())
+  name            String            @db.VarChar
+  phone_no        String            @unique @db.VarChar
+  email           String?           @unique @db.VarChar
+  is_active       Boolean?
+  is_available    Boolean?
+  latitude        Float?
+  longitude       Float?
+  address         String?
+  vendor_id       Int?
+  company_id      Int?
+  driver_vehicles driver_vehicles[]
+  companies       companies?        @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vendors         vendors?          @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([id], map: "ix_drivers_id")
+}
+
+model employees {
+  id                      Int        @id @default(autoincrement())
+  employee_code           String     @db.VarChar
+  email                   String?    @unique @db.VarChar
+  name                    String?    @db.VarChar
+  password                String?    @db.VarChar
+  company_id              Int
+  team_id                 Int?
+  contact                 String?    @db.VarChar
+  address                 String?    @db.VarChar
+  latitude                Float?
+  longitude               Float?
+  phone_no                String?    @unique @db.VarChar
+  alternate_mobile_number String?    @db.VarChar
+  special_need            Boolean?
+  special_need_start      DateTime?  @db.Timestamp(6)
+  special_need_end        DateTime?  @db.Timestamp(6)
+  is_transport_user       Boolean?
+  subscribe_email         Boolean?
+  subscribe_sms           Boolean?
+  subscribe_mobile_app    Boolean?
+  gender                  String?    @db.VarChar
+  is_active               Boolean
+  bookings                bookings[]
+  companies               companies  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  teams                   teams?     @relation(fields: [team_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([id], map: "ix_employees_id")
+}
+
+model holidays {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar
+  company_id  Int
+  date        DateTime  @db.Date
+  is_active   Boolean?
+  description String?
+  companies   companies @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([id], map: "ix_holidays_id")
+}
+
+model policies {
+  id            Int             @id @default(autoincrement())
+  name          String          @db.VarChar
+  description   String?
+  module        String          @db.VarChar
+  action        String          @db.VarChar
+  role_policies role_policies[]
+
+  @@index([id], map: "ix_policies_id")
+}
+
+model role_policies {
+  id        Int       @id @default(autoincrement())
+  role_id   Int?
+  policy_id Int?
+  policies  policies? @relation(fields: [policy_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  roles     roles?    @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([id], map: "ix_role_policies_id")
+}
+
+model roles {
+  id                Int                 @id @default(autoincrement())
+  name              String              @db.VarChar
+  role_policies     role_policies[]
+  user_role_company user_role_company[]
+  users             users[]
+
+  @@index([id], map: "ix_roles_id")
+}
+
+model routes {
+  id             Int        @id @default(autoincrement())
+  name           String     @db.VarChar
+  origin         String     @db.VarChar
+  destination    String     @db.VarChar
+  route_path     String?
+  estimated_time String?    @db.VarChar
+  bookings       bookings[]
+
+  @@index([id], map: "ix_routes_id")
+}
+
+model shifts {
+  id             Int              @id @default(autoincrement())
+  name           String           @db.VarChar
+  log            String?
+  time           DateTime         @db.Time(6)
+  is_night_shift Boolean
+  company_id     Int?
+  team_id        Int?
+  bookings       bookings[]
+  cutoff_windows cutoff_windows[]
+  companies      companies?       @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  teams          teams?           @relation(fields: [team_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([id], map: "ix_shifts_id")
+}
+
+model teams {
+  id          Int         @id @default(autoincrement())
+  name        String      @db.VarChar
+  manager_id  Int?
+  description String?
+  is_active   Boolean?
+  company_id  Int
+  employees   employees[]
+  shifts      shifts[]
+  companies   companies   @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users       users?      @relation(fields: [manager_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([id], map: "ix_teams_id")
+}
+
+model user_role_company {
+  id         Int        @id @default(autoincrement())
+  user_id    Int?
+  role_id    Int?
+  company_id Int?
+  is_active  Boolean?
+  expires_at DateTime?  @db.Timestamp(6)
+  companies  companies? @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  roles      roles?     @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users      users?     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([user_id, company_id], map: "uq_user_company_once")
+}
+
+model users {
+  id                Int                 @id @default(autoincrement())
+  name              String              @db.VarChar
+  email             String              @unique @db.VarChar
+  hashed_password   String              @db.VarChar
+  role_id           Int?
+  company_id        Int?
+  teams             teams[]
+  user_role_company user_role_company[]
+  companies         companies?          @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  roles             roles?              @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([id], map: "ix_users_id")
+}
+
+model vehicle_types {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique @db.VarChar
+  description String?   @db.VarChar
+  capacity    Int
+  fuel_type   String    @db.VarChar
+  company_id  Int
+  vendor_id   Int?
+  comments    String?   @db.VarChar
+  is_active   Int
+  is_deleted  Int
+  created_at  String    @db.VarChar
+  updated_at  String    @db.VarChar
+  companies   companies @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vendors     vendors?  @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([id], map: "ix_vehicle_types_id")
+}
+
+model vehicles {
+  id              Int               @id @default(autoincrement())
+  name            String            @db.VarChar
+  vehicle_type    String            @db.VarChar
+  license_plate   String            @unique @db.VarChar
+  color           String?           @db.VarChar
+  company_id      Int?
+  vendor_id       Int?
+  driver_vehicles driver_vehicles[]
+  companies       companies?        @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  vendors         vendors?          @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([id], map: "ix_vehicles_id")
+}
+
+model vendors {
+  id            Int             @id @default(autoincrement())
+  name          String          @db.VarChar
+  phone_no      String          @unique @db.VarChar
+  email         String?         @unique @db.VarChar
+  is_active     Boolean?
+  address       String?
+  company_id    Int
+  drivers       drivers[]
+  vehicle_types vehicle_types[]
+  vehicles      vehicles[]
+  companies     companies       @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([id], map: "ix_vendors_id")
+}

@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/////////////////////////////
+// 🌍 Global (platform level)
+/////////////////////////////
+
+model Admin {
+  id        Int               @id @default(autoincrement())
+  name      String
+  email     String            @unique
+  password  String
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  adminPermissions AdminPermission[]
+}
+
+model AdminPermission {
+  id        Int    @id @default(autoincrement())
+  adminId   Int
+  moduleId  Int
+
+  canRead   Boolean @default(false)
+  canWrite  Boolean @default(false)
+  canDelete Boolean @default(false)
+
+  admin   Admin  @relation(fields: [adminId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  module  Module @relation(fields: [moduleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([adminId, moduleId], name: "unique_admin_module")
+}
+
+/////////////////////////////
+// 🏢 Tenants & modules
+/////////////////////////////
+
+model Company {
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String?   @unique
+  phone     String?   @unique
+  address   String?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  employees Employee[]
+  roles     Role[]
+}
+
+/////////////////////////////
+// 🧩 Modules & permissions
+/////////////////////////////
+
+model Module {
+  id        Int      @id @default(autoincrement())
+  name      String
+  key       String   @unique // e.g., "booking", "dashboard"
+  parentId  Int?
+  parent    Module?  @relation("ParentChild", fields: [parentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  children  Module[] @relation("ParentChild")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rolePermissions  RolePermission[]    // tenant-level permissions
+  adminPermissions AdminPermission[]   // super admin-level permissions
+}
+
+model Role {
+  id        Int       @id @default(autoincrement())
+  name      String
+  companyId Int
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  rolePermissions RolePermission[]
+  employees       Employee[]
+}
+
+model RolePermission {
+  id       Int @id @default(autoincrement())
+  roleId   Int
+  moduleId Int
+
+  canRead   Boolean @default(false)
+  canWrite  Boolean @default(false)
+  canDelete Boolean @default(false)
+
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([roleId, moduleId], name: "unique_role_module")
+}
+
+/////////////////////////////
+// 👩‍💼 Employees (belong to company)
+/////////////////////////////
+
+model Employee {
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String    @unique
+  password  String
+  phone     String?   @unique
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  companyId Int
+  roleId    Int
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  role    Role    @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
