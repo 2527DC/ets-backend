@@ -29,7 +29,7 @@ app.get('/api/message', (req, res) => {
 });
 
 // Start the server
-const PORT = process.env.PORT || 8000;
+const PORT = 8000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port http://localhost:${PORT}`);
 });
