@@ -1,0 +1,14 @@
+name: CICD PRACTICE
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  check-my-CICD:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run an echo
+        run: echo "I am the hero kdjbkj"
