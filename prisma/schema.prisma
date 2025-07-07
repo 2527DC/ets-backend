@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -8,51 +9,35 @@ datasource db {
 }
 
 /////////////////////////////
-// 🌍 Global (platform level)
+// 🧑‍💼 Users (Admin & Employee)
 /////////////////////////////
 
-model Admin {
-  id        Int               @id @default(autoincrement())
-  name      String
-  email     String            @unique
-  password  String
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+enum UserType {
+  ADMIN
+  SUPER_ADMIN
+  EMPLOYEE
+}
 
+model User {
+  id         Int       @id @default(autoincrement())
+  name       String
+  email      String    @unique
+  password   String
+  phone      String?   @unique
+  type       UserType
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  // tenant/employee-specific fields
+  companyId  Int?
+  roleId     Int?
+
+  company    Company? @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  role       Role?    @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  // permissions
   adminPermissions AdminPermission[]
-}
-
-model AdminPermission {
-  id        Int    @id @default(autoincrement())
-  adminId   Int
-  moduleId  Int
-
-  canRead   Boolean @default(false)
-  canWrite  Boolean @default(false)
-  canDelete Boolean @default(false)
-
-  admin   Admin  @relation(fields: [adminId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  module  Module @relation(fields: [moduleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@unique([adminId, moduleId], name: "unique_admin_module")
-}
-
-/////////////////////////////
-// 🏢 Tenants & modules
-/////////////////////////////
-
-model Company {
-  id        Int       @id @default(autoincrement())
-  name      String
-  email     String?   @unique
-  phone     String?   @unique
-  address   String?
-  isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  employees Employee[]
-  roles     Role[]
 }
 
 /////////////////////////////
@@ -70,26 +55,29 @@ model Module {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  rolePermissions  RolePermission[]    // tenant-level permissions
-  adminPermissions AdminPermission[]   // super admin-level permissions
+  adminPermissions AdminPermission[]
+  rolePermissions  RolePermission[]
 }
 
-model Role {
-  id        Int       @id @default(autoincrement())
-  name      String
-  companyId Int
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+model AdminPermission {
+  id        Int    @id @default(autoincrement())
+  userId    Int
+  moduleId  Int
 
-  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  rolePermissions RolePermission[]
-  employees       Employee[]
+  canRead   Boolean @default(false)
+  canWrite  Boolean @default(false)
+  canDelete Boolean @default(false)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([userId, moduleId], name: "unique_user_module")
 }
 
 model RolePermission {
-  id       Int @id @default(autoincrement())
-  roleId   Int
-  moduleId Int
+  id        Int    @id @default(autoincrement())
+  roleId    Int
+  moduleId  Int
 
   canRead   Boolean @default(false)
   canWrite  Boolean @default(false)
@@ -102,22 +90,51 @@ model RolePermission {
 }
 
 /////////////////////////////
-// 👩‍💼 Employees (belong to company)
+// 🏢 Tenants
 /////////////////////////////
 
-model Employee {
-  id        Int       @id @default(autoincrement())
+model Company {
+  id        Int      @id @default(autoincrement())
   name      String
-  email     String    @unique
-  password  String
-  phone     String?   @unique
-  isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  email     String?  @unique
+  phone     String?  @unique
+  address   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  users     User[]    // Employees & Admins (if multi-tenant admins)
+  roles     Role[]
+  drivers   Driver[]
+}
+
+model Role {
+  id        Int      @id @default(autoincrement())
+  name      String
   companyId Int
-  roleId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  role    Role    @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  rolePermissions RolePermission[]
+  users           User[]
+}
+
+/////////////////////////////
+// 🚗 Drivers (belong to company)
+/////////////////////////////
+
+model Driver {
+  id          Int      @id @default(autoincrement())
+  name        String
+  email       String?  @unique
+  phone       String?  @unique
+  licenseNo   String
+  vehicleId   Int?     // optional if you track vehicles separately
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  companyId   Int
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }

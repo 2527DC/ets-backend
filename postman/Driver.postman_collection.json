@@ -1,0 +1,89 @@
+{
+    "info": {
+      "name": "Driver CRUD",
+      "_postman_id": "c9e6ef5a-5678-42b6-8c5e-b124e5b78f30",
+      "description": "CRUD operations for Driver model",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Create Driver",
+        "request": {
+          "method": "POST",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"phone\": \"9876543210\",\n  \"licenseNo\": \"DL1234\",\n  \"companyId\": 1\n}"
+          },
+          "url": {
+            "raw": "http://localhost:8000/api/drivers",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": ["api", "drivers"]
+          }
+        }
+      },
+      {
+        "name": "Get All Drivers",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": {
+            "raw": "http://localhost:8000/api/drivers",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": ["api", "drivers"]
+          }
+        }
+      },
+      {
+        "name": "Get Driver by ID",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": {
+            "raw": "http://localhost:8000/api/drivers/1",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": ["api", "drivers", "1"]
+          }
+        }
+      },
+      {
+        "name": "Update Driver",
+        "request": {
+          "method": "PUT",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"name\": \"Updated Name\",\n  \"phone\": \"9876543211\"\n}"
+          },
+          "url": {
+            "raw": "http://localhost:8000/api/drivers/1",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": ["api", "drivers", "1"]
+          }
+        }
+      },
+      {
+        "name": "Delete Driver",
+        "request": {
+          "method": "DELETE",
+          "header": [],
+          "url": {
+            "raw": "http://localhost:8000/api/drivers/1",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": ["api", "drivers", "1"]
+          }
+        }
+      }
+    ]
+  }
+  

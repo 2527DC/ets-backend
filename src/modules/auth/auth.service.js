@@ -6,38 +6,35 @@ const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 
 const login = async (email, password) => {
-  // Try Admin
-  const admin = await prisma.admin.findUnique({
+  const user = await prisma.user.findUnique({
     where: { email },
     include: {
       adminPermissions: {
-        include: {
-          module: {
-            include: {
-              children: true,
-              parent: true   // Add this!
-            }
-          }
-        }
-      }
+        include: { module: { include: { parent: true } } }
+      },
+      role: {
+        include: { rolePermissions: { include: { module: { include: { parent: true } } } } }
+      },
+      company: true
     }
   });
-  
 
-  if (admin) {
-    const valid = await bcrypt.compare(password, admin.password);
-    if (!valid) throw { status: 401, message: 'Invalid credentials' };
+  if (!user) throw { status: 401, message: 'Invalid credentials' };
 
-    // Build modules with children
+  const valid = await bcrypt.compare(password, user.password);
+  if (!valid) throw { status: 401, message: 'Invalid credentials' };
+
+  let allowedModules = [];
+
+  if (user.type === 'ADMIN') {
     const moduleMap = new Map();
-    admin.adminPermissions.forEach(ap => {
+
+    user.adminPermissions.forEach(ap => {
       const mod = ap.module;
       if (!mod.parentId) {
-        // parent module
-        if (!moduleMap.has(mod.id)) {
-          moduleMap.set(mod.id, {
-            id: mod.id,
-            name: mod.name,
+        // Parent module
+        if (!moduleMap.has(mod.key)) {
+          moduleMap.set(mod.key, {
             key: mod.key,
             canRead: ap.canRead,
             canWrite: ap.canWrite,
@@ -46,24 +43,20 @@ const login = async (email, password) => {
           });
         }
       } else {
-        // submodule: find parent entry, or create placeholder
+        // Child module
         const parent = mod.parent;
-        let parentEntry = moduleMap.get(parent.id);
+        let parentEntry = moduleMap.get(parent.key);
         if (!parentEntry) {
           parentEntry = {
-            id: parent.id,
-            name: parent.name,
             key: parent.key,
-            canRead: true, // default true; parent permission can be filled properly if needed
+            canRead: true,
             canWrite: true,
             canDelete: true,
             children: []
           };
-          moduleMap.set(parent.id, parentEntry);
+          moduleMap.set(parent.key, parentEntry);
         }
         parentEntry.children.push({
-          id: mod.id,
-          name: mod.name,
           key: mod.key,
           canRead: ap.canRead,
           canWrite: ap.canWrite,
@@ -72,93 +65,64 @@ const login = async (email, password) => {
       }
     });
 
-    const modules = Array.from(moduleMap.values());
+    allowedModules = Array.from(moduleMap.values());
+  } else if (user.type === 'EMPLOYEE') {
+    const moduleMap = new Map();
 
-    const token = jwt.sign({ id: admin.id, type: 'admin' }, JWT_SECRET, { expiresIn: '8h' });
-
-    return {
-      id: admin.id,
-      name: admin.name,
-      email: admin.email,
-      type: 'admin',
-      modules,
-      token
-    };
-  }
-
-  // Try Employee
-  const employee = await prisma.employee.findUnique({
-    where: { email },
-    include: {
-      role: { include: { rolePermissions: { include: { module: { include: { children: true, parent: true } } } } } },
-      company: true
-    }
-  });
-
-  if (!employee) throw { status: 401, message: 'Invalid credentials' };
-
-  const valid = await bcrypt.compare(password, employee.password);
-  if (!valid) throw { status: 401, message: 'Invalid credentials' };
-
-  // Build modules with children
-  const moduleMap = new Map();
-  employee.role.rolePermissions.forEach(rp => {
-    const mod = rp.module;
-    if (!mod.parentId) {
-      if (!moduleMap.has(mod.id)) {
-        moduleMap.set(mod.id, {
-          id: mod.id,
-          name: mod.name,
+    user.role?.rolePermissions.forEach(rp => {
+      const mod = rp.module;
+      if (!mod.parentId) {
+        if (!moduleMap.has(mod.key)) {
+          moduleMap.set(mod.key, {
+            key: mod.key,
+            canRead: rp.canRead,
+            canWrite: rp.canWrite,
+            canDelete: rp.canDelete,
+            children: []
+          });
+        }
+      } else {
+        const parent = mod.parent;
+        let parentEntry = moduleMap.get(parent.key);
+        if (!parentEntry) {
+          parentEntry = {
+            key: parent.key,
+            canRead: true,
+            canWrite: true,
+            canDelete: true,
+            children: []
+          };
+          moduleMap.set(parent.key, parentEntry);
+        }
+        parentEntry.children.push({
           key: mod.key,
           canRead: rp.canRead,
           canWrite: rp.canWrite,
-          canDelete: rp.canDelete,
-          children: []
+          canDelete: rp.canDelete
         });
       }
-    } else {
-      const parent = mod.parent;
-      let parentEntry = moduleMap.get(parent.id);
-      if (!parentEntry) {
-        parentEntry = {
-          id: parent.id,
-          name: parent.name,
-          key: parent.key,
-          canRead: true, // default true; fill properly if needed
-          canWrite: true,
-          canDelete: true,
-          children: []
-        };
-        moduleMap.set(parent.id, parentEntry);
-      }
-      parentEntry.children.push({
-        id: mod.id,
-        name: mod.name,
-        key: mod.key,
-        canRead: rp.canRead,
-        canWrite: rp.canWrite,
-        canDelete: rp.canDelete
-      });
-    }
-  });
+    });
 
-  const modules = Array.from(moduleMap.values());
+    allowedModules = Array.from(moduleMap.values());
+  }
 
-  const token = jwt.sign(
-    { id: employee.id, type: 'employee', companyId: employee.companyId, role: employee.role?.name },
-    JWT_SECRET,
-    { expiresIn: '8h' }
-  );
+  const tokenPayload = {
+    id: user.id,
+    type: user.type,
+    ...(user.companyId && { companyId: user.companyId }),
+    ...(user.role?.name && { role: user.role.name })
+  };
+
+  const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '8h' });
 
   return {
-    id: employee.id,
-    name: employee.name,
-    email: employee.email,
-    type: 'employee',
-    companyId: employee.companyId,
-    companyName: employee.company.name,
-    role: employee.role?.name,
-    modules,
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    type: user.type.toLowerCase(),
+    ...(user.company && { companyId: user.company.id, companyName: user.company.name }),
+    ...(user.role && { role: user.role.name }),
+    allowedModules,
     token
   };
 };

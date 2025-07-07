@@ -1,0 +1,47 @@
+{
+    "info": {
+      "_postman_id": "bc8b89f2-4042-45b8-b07a-6f786bdb0af1",
+      "name": "Auth",
+      "description": "Auth endpoints: login and register",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Login",
+        "request": {
+          "method": "POST",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"securePass123\"\n}"
+          },
+          "url": {
+            "raw": "http://localhost:8000/api/auth/login",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": ["api", "auth", "login"]
+          }
+        }
+      },
+      {
+        "name": "Register",
+        "request": {
+          "method": "POST",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"securePass123\",\n  \"phone\": \"1234567890\",\n  \"companyId\": 1,\n  \"roleId\": 1,\n  \"type\": \"EMPLOYEE\"\n}"
+          },
+          "url": {
+            "raw": "http://localhost:8000/api/auth/register",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": ["api", "auth", "register"]
+          }
+        }
+      }
+    ]
+  }
+  
