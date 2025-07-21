@@ -6,14 +6,18 @@ const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 
 const login = async (email, password) => {
+  
   const user = await prisma.user.findUnique({
     where: { email },
     include: {
-      adminPermissions: {
-        include: { module: { include: { parent: true } } }
-      },
       role: {
-        include: { rolePermissions: { include: { module: { include: { parent: true } } } } }
+        include: {
+          rolePermissions: {
+            include: {
+              module: { include: { parent: true } }
+            }
+          }
+        }
       },
       company: true
     }
@@ -26,47 +30,7 @@ const login = async (email, password) => {
 
   let allowedModules = [];
 
-  if (user.type === 'ADMIN') {
-    const moduleMap = new Map();
-
-    user.adminPermissions.forEach(ap => {
-      const mod = ap.module;
-      if (!mod.parentId) {
-        // Parent module
-        if (!moduleMap.has(mod.key)) {
-          moduleMap.set(mod.key, {
-            key: mod.key,
-            canRead: ap.canRead,
-            canWrite: ap.canWrite,
-            canDelete: ap.canDelete,
-            children: []
-          });
-        }
-      } else {
-        // Child module
-        const parent = mod.parent;
-        let parentEntry = moduleMap.get(parent.key);
-        if (!parentEntry) {
-          parentEntry = {
-            key: parent.key,
-            canRead: true,
-            canWrite: true,
-            canDelete: true,
-            children: []
-          };
-          moduleMap.set(parent.key, parentEntry);
-        }
-        parentEntry.children.push({
-          key: mod.key,
-          canRead: ap.canRead,
-          canWrite: ap.canWrite,
-          canDelete: ap.canDelete
-        });
-      }
-    });
-
-    allowedModules = Array.from(moduleMap.values());
-  } else if (user.type === 'EMPLOYEE') {
+  if (user.type === 'EMPLOYEE') {
     const moduleMap = new Map();
 
     user.role?.rolePermissions.forEach(rp => {
@@ -74,7 +38,7 @@ const login = async (email, password) => {
       if (!mod.parentId) {
         if (!moduleMap.has(mod.key)) {
           moduleMap.set(mod.key, {
-            key: mod.key,
+            id: mod.key,
             canRead: rp.canRead,
             canWrite: rp.canWrite,
             canDelete: rp.canDelete,
@@ -86,7 +50,7 @@ const login = async (email, password) => {
         let parentEntry = moduleMap.get(parent.key);
         if (!parentEntry) {
           parentEntry = {
-            key: parent.key,
+            id: parent.key,
             canRead: true,
             canWrite: true,
             canDelete: true,
@@ -95,7 +59,7 @@ const login = async (email, password) => {
           moduleMap.set(parent.key, parentEntry);
         }
         parentEntry.children.push({
-          key: mod.key,
+          id: mod.key,
           canRead: rp.canRead,
           canWrite: rp.canWrite,
           canDelete: rp.canDelete

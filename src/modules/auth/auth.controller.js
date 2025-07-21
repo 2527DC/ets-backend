@@ -2,6 +2,7 @@ import authService from './auth.service.js';
 
 export const login = async (req, res) => {
   try {
+    
     const { email, password } = req.body;
     const result = await authService.login(email, password);
     return res.json(result);

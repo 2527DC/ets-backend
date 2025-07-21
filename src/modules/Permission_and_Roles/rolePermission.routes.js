@@ -4,7 +4,8 @@ import {
   getAllRolePermissions,
   updateRolePermission,
   deleteRolePermission,
-  getRolePermissionsByRoleId
+  getRolePermissionsByRoleId,
+  getUserPermissions
 } from './rolePermission.controller.js';
 
 const router = express.Router();
@@ -17,8 +18,10 @@ router.get('/', getAllRolePermissions);
 
 // PUT /api/role-permissions/:id
 router.put('/:id', updateRolePermission);
-
 // DELETE /api/role-permissions/:id
 router.delete('/:id', deleteRolePermission);
+router.get('/permissions', getUserPermissions); // get role permission by token 
+
 router.get('/role/:roleId', getRolePermissionsByRoleId);
 export default router;
+

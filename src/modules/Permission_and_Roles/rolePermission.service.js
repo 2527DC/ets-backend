@@ -1,6 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
+import jwt from 'jsonwebtoken';
 
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 
 export const createRolePermissionWithChildren = async ({ roleId, moduleId, canRead, canWrite, canDelete }) => {
   // Create parent module permission
@@ -75,4 +77,43 @@ export const getRolePermissionsByRoleId = async (roleId) => {
       canDelete: p.canDelete
     }))
   };
+};
+
+export const getPermissionsFromToken = async (token) => {
+  try {
+    // 1️⃣ Verify and decode token
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    const companyId = decoded?.companyId;
+    const roleName = decoded?.role;
+
+    if (!companyId || !roleName) {
+      throw new Error('Invalid token payload: missing companyId or role');
+    }
+
+    // 2️⃣ Find role by companyId + name
+    const role = await prisma.role.findFirst({
+      where: {
+        companyId,
+        name: roleName,
+      },
+      include: {
+        rolePermissions: {
+          include: {
+            module: true,  // include module info
+          },
+        },
+      },
+    });
+
+    if (!role) {
+      throw new Error('Role not found for this company');
+    }
+
+    return role;
+
+  } catch (err) {
+    console.error('getPermissionsFromToken error:', err);
+    throw new Error('Failed to get permissions: ' + err.message);
+  }
 };

@@ -9,12 +9,14 @@ import roleRoutes from './src/modules/Permission_and_Roles/role.routes.js';
 import moduleRoutes from './src/modules/modules/ module.routes.js';
 import userRoutes from './src/modules/user/user.routes.js';
 import rolePermissionRoutes from './src/modules/Permission_and_Roles/rolePermission.routes.js'
+import { authenticate } from './src/middlewares/auth.middleware.js';
 
 // Load environment variables from .env file
 dotenv.config();
 
 // Create an Express app
 const app = express();
+app.use(express.json());
 
 // Enable CORS for all origins (you can customize this)
 app.use(cors({ origin:
@@ -27,6 +29,10 @@ app.use(cors({ origin:
 // Parse JSON request bodies
 app.use(express.json());
 // Routes
+app.post('/api/auth/login', login);
+
+app.use(authenticate)
+
 app.use('/api/role-permissions', rolePermissionRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/drivers', driverRoutes);
@@ -35,7 +41,6 @@ app.use('/api/modules', moduleRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/drivers', driverRoutes);
 app.use('/api/companies', companyRoutes);
-app.post('/api/auth/login', login);
 app.post('/api/company', createCompany);
 // Example route
 app.get('/api/message', (req, res) => {
