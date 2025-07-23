@@ -30,7 +30,7 @@ const login = async (email, password) => {
 
   let allowedModules = [];
 
-  if (user.type === 'EMPLOYEE') {
+  if (user) {
     const moduleMap = new Map();
 
     user.role?.rolePermissions.forEach(rp => {

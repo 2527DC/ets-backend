@@ -4,14 +4,17 @@ import companyService from './company.service.js';
 // Create new company
 export const createCompany = async (req, res) => {
   try {
-    const { name, email, phone, address } = req.body;
-    const company = await companyService.createCompany({ name, email, phone, address });
+    const { company: companydata, adminUser,  permissions } = req.body;
+
+    const company = await companyService.createCompany( companydata, adminUser, permissions );
+
     return res.status(201).json(company);
   } catch (err) {
     console.error(err);
     return res.status(err.status || 500).json({ message: err.message || "Something went wrong" });
   }
 };
+
 
 // Get all companies
 export const getAllCompanies = async (req, res) => {
