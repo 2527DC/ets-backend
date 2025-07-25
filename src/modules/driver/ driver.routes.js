@@ -1,10 +1,12 @@
 import express from 'express';
 import * as controller from './driver.controller.js';
+import uploadDocuments from '../../middlewares/upload.middleware.js';
 
 const router = express.Router();
 
 // POST /api/drivers
-router.post('/', controller.createDriver);
+router.post( '/',uploadDocuments, controller.createDriver
+  );
 
 // GET /api/drivers
 router.get('/', controller.getAllDrivers);

@@ -1,0 +1,197 @@
+{
+  "info": {
+    "name": "Booking CRUD API",
+    "_postman_id": "5e6f7g8h-9f6g-7d2e-1g3i-9j0k2f1g3i4j",
+    "description": "Postman collection for complete CRUD operations on Booking model with User relation",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Booking",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": 1,\n  \"pickupAddress\": \"123 Main St, City A\",\n  \"dropAddress\": \"456 Elm St, City B\",\n  \"status\": \"PENDING\",\n  \"bookingType\": \"ADHOC\",\n  \"isAdhoc\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/bookings",
+          "host": ["{{baseUrl}}"],
+          "path": ["bookings"]
+        }
+      },
+      "response": [
+        {
+          "name": "Create Booking Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"pickupAddress\": \"123 Main St, City A\",\n  \"dropAddress\": \"456 Elm St, City B\",\n  \"status\": \"PENDING\",\n  \"bookingType\": \"ADHOC\",\n  \"isAdhoc\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings"]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "body": "{\n  \"id\": 1,\n  \"userId\": 1,\n  \"pickupAddress\": \"123 Main St, City A\",\n  \"dropAddress\": \"456 Elm St, City B\",\n  \"status\": \"PENDING\",\n  \"bookingType\": \"ADHOC\",\n  \"isAdhoc\": true,\n  \"createdAt\": \"2025-07-24T12:10:00.000Z\",\n  \"updatedAt\": \"2025-07-24T12:10:00.000Z\",\n  \"user\": {\n    \"id\": 1,\n    \"name\": \"John Smith\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Update Booking",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": 1,\n  \"pickupAddress\": \"789 Oak St, City C\",\n  \"dropAddress\": \"101 Pine St, City D\",\n  \"status\": \"ASSIGNED\",\n  \"bookingType\": \"LOGIN\",\n  \"isAdhoc\": false\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/bookings/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["bookings", "1"]
+        }
+      },
+      "response": [
+        {
+          "name": "Update Booking Success",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"pickupAddress\": \"789 Oak St, City C\",\n  \"dropAddress\": \"101 Pine St, City D\",\n  \"status\": \"ASSIGNED\",\n  \"bookingType\": \"LOGIN\",\n  \"isAdhoc\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bookings/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings", "1"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "body": "{\n  \"id\": 1,\n  \"userId\": 1,\n  \"pickupAddress\": \"789 Oak St, City C\",\n  \"dropAddress\": \"101 Pine St, City D\",\n  \"status\": \"ASSIGNED\",\n  \"bookingType\": \"LOGIN\",\n  \"isAdhoc\": false,\n  \"createdAt\": \"2025-07-24T12:10:00.000Z\",\n  \"updatedAt\": \"2025-07-24T12:15:00.000Z\",\n  \"user\": {\n    \"id\": 1,\n    \"name\": \"John Smith\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get Booking by ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/bookings/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["bookings", "1"]
+        }
+      },
+      "response": [
+        {
+          "name": "Get Booking Success",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings", "1"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "body": "{\n  \"id\": 1,\n  \"userId\": 1,\n  \"pickupAddress\": \"123 Main St, City A\",\n  \"dropAddress\": \"456 Elm St, City B\",\n  \"status\": \"PENDING\",\n  \"bookingType\": \"ADHOC\",\n  \"isAdhoc\": true,\n  \"createdAt\": \"2025-07-24T12:10:00.000Z\",\n  \"updatedAt\": \"2025-07-24T12:10:00.000Z\",\n  \"user\": {\n    \"id\": 1,\n    \"name\": \"John Smith\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get All Bookings",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/bookings",
+          "host": ["{{baseUrl}}"],
+          "path": ["bookings"]
+        }
+      },
+      "response": [
+        {
+          "name": "Get All Bookings Success",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "body": "[\n  {\n    \"id\": 1,\n    \"userId\": 1,\n    \"pickupAddress\": \"123 Main St, City A\",\n    \"dropAddress\": \"456 Elm St, City B\",\n    \"status\": \"PENDING\",\n    \"bookingType\": \"ADHOC\",\n    \"isAdhoc\": true,\n    \"createdAt\": \"2025-07-24T12:10:00.000Z\",\n    \"updatedAt\": \"2025-07-24T12:10:00.000Z\",\n    \"user\": {\n      \"id\": 1,\n      \"name\": \"John Smith\"\n    }\n  },\n  {\n    \"id\": 2,\n    \"userId\": 2,\n    \"pickupAddress\": \"789 Oak St, City C\",\n    \"dropAddress\": \"101 Pine St, City D\",\n    \"status\": \"ASSIGNED\",\n    \"bookingType\": \"LOGIN\",\n    \"isAdhoc\": false,\n    \"createdAt\": \"2025-07-24T12:12:00.000Z\",\n    \"updatedAt\": \"2025-07-24T12:12:00.000Z\",\n    \"user\": {\n      \"id\": 2,\n      \"name\": \"Jane Doe\"\n    }\n  }\n]"
+        }
+      ]
+    },
+    {
+      "name": "Delete Booking",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/bookings/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["bookings", "1"]
+        }
+      },
+      "response": [
+        {
+          "name": "Delete Booking Success",
+          "originalRequest": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings", "1"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "body": "{\n  \"message\": \"Booking deleted successfully\"\n}"
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api"
+    }
+  ]
+}

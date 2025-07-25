@@ -1,0 +1,158 @@
+{
+  "info": {
+    "name": "Vehicle & VehicleType CRUD APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create VehicleType",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Sedan\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/vehicletype",
+          "host": ["{{base_url}}"],
+          "path": ["api", "vehicletype"]
+        }
+      }
+    },
+    {
+      "name": "Get All VehicleTypes",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/api/vehicletype",
+          "host": ["{{base_url}}"],
+          "path": ["api", "vehicletype"]
+        }
+      }
+    },
+    {
+      "name": "Get Single VehicleType",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/api/vehicletype/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "vehicletype", "1"]
+        }
+      }
+    },
+    {
+      "name": "Update VehicleType",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Sedan\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/vehicletype/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "vehicletype", "1"]
+        }
+      }
+    },
+    {
+      "name": "Delete VehicleType",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "{{base_url}}/api/vehicletype/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "vehicletype", "1"]
+        }
+      }
+    },
+    {
+      "name": "Create Vehicle",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vehicleId\": \"KA01AB1234\",\n  \"vendorId\": 1,\n  \"vehicleTypeId\": 1\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/vehicle",
+          "host": ["{{base_url}}"],
+          "path": ["api", "vehicle"]
+        }
+      }
+    },
+    {
+      "name": "Get All Vehicles",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/api/vehicle",
+          "host": ["{{base_url}}"],
+          "path": ["api", "vehicle"]
+        }
+      }
+    },
+    {
+      "name": "Get Single Vehicle",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/api/vehicle/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "vehicle", "1"]
+        }
+      }
+    },
+    {
+      "name": "Update Vehicle",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vehicleId\": \"KA01AB1234\",\n  \"vendorId\": 1,\n  \"vehicleTypeId\": 1\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/vehicle/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "vehicle", "1"]
+        }
+      }
+    },
+    {
+      "name": "Delete Vehicle",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "{{base_url}}/api/vehicle/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "vehicle", "1"]
+        }
+      }
+    }
+  ]
+}

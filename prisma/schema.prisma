@@ -8,20 +8,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserType {
+  ADMIN
+  SUPER_ADMIN
+  EMPLOYEE
+}
+
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  phone     String?  @unique
-  type      UserType
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  companyId Int?
-  roleId    Int?
-  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  role      Role?    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  id            Int       @id @default(autoincrement())
+  name          String
+  email         String    @unique
+  password      String
+  phone         String?   @unique
+  type          UserType
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  companyId     Int?
+  roleId        Int?
+  company       Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  role          Role?     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  addtionalInfo Json?
+  bookings      Booking[]
 }
 
 model Module {
@@ -75,22 +83,199 @@ model Role {
   users           User[]
 }
 
-model Driver {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String?  @unique
-  phone     String?  @unique
-  licenseNo String
-  vehicleId Int?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  companyId Int
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+
+model Vendor {
+  id       Int       @id @default(autoincrement())
+  name     String
+  vehicles Vehicle[]
+  routes   Route[] // changed from singular Route? to Route[]
+  Trip     Trip[]
 }
 
-enum UserType {
-  ADMIN
-  SUPER_ADMIN
-  EMPLOYEE
+model VehicleType {
+  id       Int       @id @default(autoincrement())
+  name     String
+  vehicles Vehicle[]
+}
+model Vehicle {
+  id            Int               @id @default(autoincrement())
+  vehicleId     String            @unique
+  vendorId      Int
+  vehicleTypeId Int
+  vendor        Vendor            @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  vehicleType   VehicleType       @relation(fields: [vehicleTypeId], references: [id], onDelete: Restrict)
+  documents     VehicleDocument[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  driver Driver[]
+  Route  Route?
+}
+
+model VehicleDocument {
+  id           Int            @id @default(autoincrement())
+  vehicleId    Int
+  documentType DocumentType
+  filePath     String
+  status       DocumentStatus @default(PENDING)
+  expiryDate   DateTime?
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([vehicleId, documentType]) // Ensure one document per type per vehicle
+}
+
+model Driver {
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String?  @unique
+  phone      String?  @unique
+  licenseNo  String
+  vehicleId  Int?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  companyId  Int
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  documentId Int?
+  vehicle    Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+
+  driverDocuments DriverDocumnets[]
+  Trip            Trip[]
+}
+
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DocumentType {
+  INSURANCE
+  LICENSE
+  AADHAR
+  RC
+  POLLUTION
+}
+
+model DriverDocumnets {
+  id           Int            @id @default(autoincrement())
+  driverId     Int
+  documentType DocumentType
+  status       DocumentStatus @default(PENDING)
+  filepath     String
+  expiryDate   DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  driver       Driver         @relation(fields: driverId, references: id)
+
+  @@unique([driverId, documentType])
+}
+
+enum ShiftType {
+  LOGIN
+  LOGOUT
+}
+
+model ShiftCategory {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  shifts      Shift[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Shift {
+  id              Int           @id @default(autoincrement())
+  shiftType       ShiftType
+  hour            Int
+  minute          Int
+  shiftCategory   ShiftCategory @relation(fields: [shiftCategoryId], references: [id])
+  shiftCategoryId Int
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  Route           Route[]
+}
+
+enum BookingType {
+  LOGIN
+  LOGOUT
+  ADHOC
+}
+
+enum BookingStatus {
+  PENDING
+  ASSIGNED
+  COMPLETED
+  CANCELLED
+}
+
+model Booking {
+  id            Int           @id @default(autoincrement())
+  userId        Int
+  pickupAddress String
+  dropAddress   String
+  status        BookingStatus @default(PENDING)
+  bookingType   BookingType
+  isAdhoc       Boolean       @default(false)
+  user          User          @relation(fields: [userId], references: [id])
+
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  RouteBooking RouteBooking[]
+}
+
+model Route {
+  id       Int   @id @default(autoincrement())
+  distance Float @default(0.0)
+
+  vendorId Int?    @unique
+  vendor   Vendor? @relation(fields: [vendorId], references: [id])
+
+  vehicleId Int?     @unique
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
+
+  shiftId Int
+  shift   Shift @relation(fields: [shiftId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  routeBookings RouteBooking[]
+  trips         Trip[]
+}
+
+model RouteBooking {
+  id        Int      @id @default(autoincrement())
+  routeId   Int
+  bookingId Int
+  createdAt DateTime @default(now())
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  route     Route    @relation(fields: [routeId], references: [id])
+
+  @@unique([routeId, bookingId])
+}
+
+enum TripStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Trip {
+  id        Int        @id @default(autoincrement())
+  driverId  Int
+  vendorId  Int
+  routeId   Int
+  createdBy Int
+  createdAt DateTime   @default(now())
+  status    TripStatus
+  driver    Driver     @relation(fields: [driverId], references: [id])
+  route     Route      @relation(fields: [routeId], references: [id])
+  vendor    Vendor     @relation(fields: [vendorId], references: [id])
 }

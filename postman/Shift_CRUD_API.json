@@ -1,0 +1,197 @@
+{
+  "info": {
+    "name": "Shift CRUD API",
+    "_postman_id": "4d5e6f7g-8e5g-6c1d-0f2h-8i9j1e0f2g3h",
+    "description": "Postman collection for complete CRUD operations on Shift model with ShiftCategory relation",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Shift",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"shiftType\": \"LOGIN\",\n  \"hour\": 8,\n  \"minute\": 0,\n  \"shiftCategoryId\": 1\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/shifts",
+          "host": ["{{baseUrl}}"],
+          "path": ["shifts"]
+        }
+      },
+      "response": [
+        {
+          "name": "Create Shift Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shiftType\": \"LOGIN\",\n  \"hour\": 8,\n  \"minute\": 0,\n  \"shiftCategoryId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shifts",
+              "host": ["{{baseUrl}}"],
+              "path": ["shifts"]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "body": "{\n  \"id\": 1,\n  \"shiftType\": \"LOGIN\",\n  \"hour\": 8,\n  \"minute\": 0,\n  \"shiftCategoryId\": 1,\n  \"createdAt\": \"2025-07-24T12:01:00.000Z\",\n  \"updatedAt\": \"2025-07-24T12:01:00.000Z\",\n  \"shiftCategory\": {\n    \"id\": 1,\n    \"name\": \"Morning Shift\",\n    \"description\": \"Morning shift schedule\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Update Shift",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"shiftType\": \"LOGOUT\",\n  \"hour\": 16,\n  \"minute\": 30,\n  \"shiftCategoryId\": 2\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/shifts/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["shifts", "1"]
+        }
+      },
+      "response": [
+        {
+          "name": "Update Shift Success",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shiftType\": \"LOGOUT\",\n  \"hour\": 16,\n  \"minute\": 30,\n  \"shiftCategoryId\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shifts/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["shifts", "1"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "body": "{\n  \"id\": 1,\n  \"shiftType\": \"LOGOUT\",\n  \"hour\": 16,\n  \"minute\": 30,\n  \"shiftCategoryId\": 2,\n  \"createdAt\": \"2025-07-24T12:01:00.000Z\",\n  \"updatedAt\": \"2025-07-24T12:05:00.000Z\",\n  \"shiftCategory\": {\n    \"id\": 2,\n    \"name\": \"Evening Shift\",\n    \"description\": \"Evening shift schedule\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get Shift by ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/shifts/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["shifts", "1"]
+        }
+      },
+      "response": [
+        {
+          "name": "Get Shift Success",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shifts/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["shifts", "1"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "body": "{\n  \"id\": 1,\n  \"shiftType\": \"LOGIN\",\n  \"hour\": 8,\n  \"minute\": 0,\n  \"shiftCategoryId\": 1,\n  \"createdAt\": \"2025-07-24T12:01:00.000Z\",\n  \"updatedAt\": \"2025-07-24T12:01:00.000Z\",\n  \"shiftCategory\": {\n    \"id\": 1,\n    \"name\": \"Morning Shift\",\n    \"description\": \"Morning shift schedule\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get All Shifts",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/shifts",
+          "host": ["{{baseUrl}}"],
+          "path": ["shifts"]
+        }
+      },
+      "response": [
+        {
+          "name": "Get All Shifts Success",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shifts",
+              "host": ["{{baseUrl}}"],
+              "path": ["shifts"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "body": "[\n  {\n    \"id\": 1,\n    \"shiftType\": \"LOGIN\",\n    \"hour\": 8,\n    \"minute\": 0,\n    \"shiftCategoryId\": 1,\n    \"createdAt\": \"2025-07-24T12:01:00.000Z\",\n    \"updatedAt\": \"2025-07-24T12:01:00.000Z\",\n    \"shiftCategory\": {\n      \"id\": 1,\n      \"name\": \"Morning Shift\",\n      \"description\": \"Morning shift schedule\"\n    }\n  },\n  {\n    \"id\": 2,\n    \"shiftType\": \"LOGOUT\",\n    \"hour\": 16,\n    \"minute\": 0,\n    \"shiftCategoryId\": 2,\n    \"createdAt\": \"2025-07-24T12:02:00.000Z\",\n    \"updatedAt\": \"2025-07-24T12:02:00.000Z\",\n    \"shiftCategory\": {\n      \"id\": 2,\n      \"name\": \"Evening Shift\",\n      \"description\": \"Evening shift schedule\"\n    }\n  }\n]"
+        }
+      ]
+    },
+    {
+      "name": "Delete Shift",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/shifts/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["shifts", "1"]
+        }
+      },
+      "response": [
+        {
+          "name": "Delete Shift Success",
+          "originalRequest": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shifts/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["shifts", "1"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "body": "{\n  \"message\": \"Shift deleted successfully\"\n}"
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api"
+    }
+  ]
+}
