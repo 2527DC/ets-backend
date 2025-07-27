@@ -13,24 +13,43 @@ enum UserType {
   SUPER_ADMIN
   EMPLOYEE
 }
+ enum  Gender{
+  MALE
+  FEMALE
+  OTHERS
+ }
+
+ enum SpecialNeeds{
+  PREGNENT
+ }
+
 
 model User {
-  id            Int       @id @default(autoincrement())
-  name          String
-  email         String    @unique
-  password      String
-  phone         String?   @unique
-  type          UserType
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  companyId     Int?
-  roleId        Int?
-  company       Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  role          Role?     @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  addtionalInfo Json?
-  bookings      Booking[]
+  id                  Int         @id @default(autoincrement())
+  userId              String?     @unique
+  name                String
+  gender              Gender?
+  specialNeed         SpecialNeeds?
+  specialNeedStart    DateTime?   // e.g., pregnancy start date
+  specialNeedEnd      DateTime?   // e.g., expected delivery date or support period end
+  email               String      @unique
+  password            String
+  phone               String?     @unique
+  type                UserType
+  isActive            Boolean     @default(true)
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  companyId           Int?
+  roleId              Int?
+  company             Company?    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  role                Role?       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  address             String?
+  lat                 Float?    
+  lng                 Float?
+  addtionalInfo       Json?
+  bookings            Booking[]
 }
+
 
 model Module {
   id              Int              @id @default(autoincrement())
@@ -142,7 +161,6 @@ model Driver {
   updatedAt  DateTime @updatedAt
   companyId  Int
   company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  documentId Int?
   vehicle    Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
 
   driverDocuments DriverDocumnets[]
@@ -156,11 +174,16 @@ enum DocumentStatus {
 }
 
 enum DocumentType {
-  INSURANCE
   LICENSE
   AADHAR
-  RC
-  POLLUTION
+  GOV_ID
+  BGV
+  POLICE_VERIFICATION
+  MEDICAL
+  TRAINING
+  EYE_TEST
+  UNDERTAKING
+  INDICATION
 }
 
 model DriverDocumnets {
@@ -172,7 +195,7 @@ model DriverDocumnets {
   expiryDate   DateTime?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
-  driver       Driver         @relation(fields: driverId, references: id)
+  driver       Driver         @relation(fields: driverId, references: id,onDelete:Cascade)
 
   @@unique([driverId, documentType])
 }

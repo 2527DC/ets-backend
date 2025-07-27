@@ -2,20 +2,18 @@ import userService from './user.service.js';
 
 export const createEmployee = async (req, res) => {
   try {
-    const { name, email, password, phone, companyId, roleId } = req.body;
+    const newEmployee = await userService.createEmployee(req.body);
 
-    if (!name || !email || !password || !companyId || !roleId) {
-      return res.status(400).json({ message: 'Missing required fields' });
-    }
-
-    const newEmployee = await userService.createEmployee({
-      name, email, password, phone, companyId, roleId
+    return res.status(201).json({
+      message: 'Employee created successfully',
     });
 
-    return res.status(201).json(newEmployee);
   } catch (err) {
     console.error('Create employee error:', err);
-    return res.status(err.status || 500).json({ message: err.message || 'Something went wrong' });
+
+    return res.status(err.status || 500).json({
+      message: err.message || 'Something went wrong',
+    });
   }
 };
 

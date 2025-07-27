@@ -1,63 +1,118 @@
 import bcrypt from 'bcrypt';
 import { PrismaClient } from '@prisma/client';
-
 const prisma = new PrismaClient();
+
+
 const SALT_ROUNDS = 10;
 
-const createEmployee = async ({ name, email, password, phone, companyId, roleId }) => {
-  // Check if email already exists
-  const existingUser = await prisma.user.findUnique({ where: { email } });
-  if (existingUser) {
-    throw { status: 400, message: 'Email already in use' };
-  }
-
-  // Hash password
-  const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-
-  // Create employee (type=EMPLOYEE)
-  const employee = await prisma.user.create({
-    data: {
-      name,
-      email,
-      password: hashedPassword,
-      phone,
-      type: 'EMPLOYEE',
-      companyId,
+const createEmployee = async (data) => {
+  try {
+    const {
+      userId,
       roleId,
-      isActive: true
-    },
-    include: {
-      role: true,
-      company: true
-    }
-  });
+      companyId,
+      additionalInfo,
+      ...userDetails
+    } = data;
 
-  return {
-    id: employee.id,
-    name: employee.name,
-    email: employee.email,
-    phone: employee.phone,
-    companyId: employee.companyId,
-    companyName: employee.company?.name,
-    roleId: employee.roleId,
-    roleName: employee.role?.name,
-    createdAt: employee.createdAt
-  };
+    const password = await bcrypt.hash(userId, SALT_ROUNDS);
+
+    const employeeData = {
+      ...userDetails,
+      userId,
+      password,
+      type: 'EMPLOYEE',
+      addtionalInfo: additionalInfo,
+      ...(companyId && { company: { connect: { id: companyId } } }),
+      ...(roleId && { role: { connect: { id: roleId } } }),
+    };
+
+    return await prisma.user.create({ data: employeeData });
+
+  } catch (error) {
+    console.error('Error creating employee:', error);
+
+    if (error.code === 'P2002') {
+      const field = error.meta?.target?.join(', ') || 'field';
+      const err = new Error(`Duplicate entry on ${field}`);
+      err.status = 409;
+      throw err;
+    }
+
+    const err = new Error('Failed to create employee');
+    err.status = 500;
+    throw err;
+  }
 };
+
+
 
 const getAllEmployees = async () => {
   return await prisma.user.findMany({
     where: { type: 'EMPLOYEE' },
-    include: { role: true, company: true }
+    select: {
+      id: true,
+      userId: true,
+      name: true,
+      gender: true,
+      specialNeed: true,
+      specialNeedStart: true,
+      specialNeedEnd: true,
+      email: true,
+      phone: true,
+      type: true,
+      isActive: true,
+      createdAt: true,
+      updatedAt: true,
+      address: true,
+      lat: true,
+      lng: true,
+      addtionalInfo: true,
+      role: {
+        select: {
+          id: true,
+          name: true
+        }
+      }
+      // Excludes company and password
+    }
   });
 };
+
 
 const getEmployeeById = async (id) => {
   return await prisma.user.findUnique({
     where: { id },
-    include: { role: true, company: true }
+    select: {
+      id: true,
+      userId: true,
+      name: true,
+      gender: true,
+      specialNeed: true,
+      specialNeedStart: true,
+      specialNeedEnd: true,
+      email: true,
+      phone: true,
+      type: true,
+      isActive: true,
+      createdAt: true,
+      updatedAt: true,
+      address: true,
+      lat: true,
+      lng: true,
+      addtionalInfo: true,
+      role: {
+        select: {
+          id: true,
+          name: true
+        }
+      }
+      // company is excluded by not adding it
+      // password is excluded by not selecting it
+    }
   });
 };
+
 
 const updateEmployee = async (id, data) => {
   if (data.password) {

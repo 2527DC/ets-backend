@@ -1,36 +1,37 @@
+import { success } from "zod";
 import * as driverService from "./driver.service.js";
 
 export const createDriver = async (req, res) => {
   try {
-    const driverData = JSON.parse(req.body.driverData);
-    const uploadedFiles = req.files?.documents || [];
+const {driver_data}= req.body
+console.log(" this is the driver data " ,driver_data);
 
-    // File path on disk for each uploaded document
-    const storedFilePaths = uploadedFiles.map((file) => file.path);
 
-    console.log("🚗 Driver Data:", driverData);
-    console.log("📄 Stored File Paths:", storedFilePaths);
+    const uploadedFiles = req.files;
+    console.log("Uploaded Files:", uploadedFiles);
 
-    // Save to DB or do other logic...
+    const fileData = Object.keys(uploadedFiles).reduce((acc, key) => {
+      console.log(" this is the  first and last key", acc, key);
+       acc[key] = uploadedFiles[key][0]?.path || null;
+      return acc;
+    }, {});
+  
+     const driver = await  driverService.createDriver(driver_data, fileData);
 
-    res.status(201).json({
-      message: "Driver created successfully",
-      data: {
-        ...driverData,
-        documents: storedFilePaths,
-      },
-    });
-  } catch (err) {
-    console.error("❌ Create driver error:", err);
-    res.status(500).json({ message: err.message || "Something went wrong" });
+    res.status(200).json({ success:true, message: "Driver created", files: fileData });
+  } catch (error) {
+    console.error("Error creating driver:", error);
+    res.status(500).json({ error: "Something went wrong" });
   }
 };
 
 
 export const getAllDrivers = async (req, res) => {
   try {
-    const drivers = await driverService.getAllDrivers();
-    res.json(drivers);
+    const driver = await driverService.getAllDrivers();
+    if (!driver) return res.status(404).json({ message: "Driver not found" });
+    res.json(driver);
+    res.json(driver);
   } catch (err) {
     console.error("Get drivers error:", err);
     res.status(500).json({ message: err.message || "Something went wrong" });
@@ -61,12 +62,19 @@ export const updateDriver = async (req, res) => {
   }
 };
 
+
 export const deleteDriver = async (req, res) => {
   try {
-    await driverService.deleteDriver(parseInt(req.params.id));
-    res.json({ message: "Driver deleted successfully" });
+    const id = parseInt(req.params.id);
+    const result = await driverService.deleteDriver(id);
+
+    if (!result.success) {
+      return res.status(result.code).json({ message: result.message || "Driver not found" });
+    }
+    return res.json({ message: "Driver deleted successfully" });
+
   } catch (err) {
     console.error("Delete driver error:", err);
-    res.status(500).json({ message: err.message || "Something went wrong" });
+    return res.status(500).json({ message: err.message || "Something went wrong" });
   }
 };

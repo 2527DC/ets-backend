@@ -5,9 +5,8 @@ import uploadDocuments from '../../middlewares/upload.middleware.js';
 const router = express.Router();
 
 // POST /api/drivers
-router.post( '/',uploadDocuments, controller.createDriver
-  );
-
+router.post("/", uploadDocuments, controller.createDriver )
+  
 // GET /api/drivers
 router.get('/', controller.getAllDrivers);
 
