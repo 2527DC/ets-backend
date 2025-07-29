@@ -64,3 +64,37 @@ export const deleteEmployee = async (req, res) => {
     return res.status(500).json({ message: 'Failed to delete employee' });
   }
 };
+
+
+export const uploadEmployees = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ 
+        message: 'No file uploaded',
+        details: 'Please upload an Excel file with employee data'
+      });
+    }
+
+    const result = await userService.bulkCreateEmployees(req.file.path);
+
+    return res.status(200).json({
+      message: result.message,
+      summary: {
+        total: result.createdCount + result.failedCount,
+        created: result.createdCount,
+        failed: result.failedCount,
+      },
+      details: {
+        created: result.created,
+        failed: result.failed,
+      },
+    });
+  } catch (err) {
+    console.error('Bulk upload error:', err);
+    return res.status(500).json({ 
+      message: 'Bulk upload failed',
+      error: err.message,
+      details: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+    });
+  }
+};

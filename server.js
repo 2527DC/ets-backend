@@ -2,12 +2,13 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 
-import { login } from "./src/modules/auth/auth.controller.js";
+import { createSuperAdminController, login } from "./src/modules/auth/auth.controller.js";
 import { createCompany } from "./src/modules/company/company.controller.js";
 
 import companyRoutes from "./src/modules/company/company.routes.js";
 import driverRoutes from "./src/modules/driver/ driver.routes.js";
 import roleRoutes from "./src/modules/Permission_and_Roles/role.routes.js";
+import shiftsRoutes from "./src/modules/shifts/shifts.routes.js";
 import moduleRoutes from "./src/modules/modules/ module.routes.js";
 import userRoutes from "./src/modules/user/user.routes.js";
 import rolePermissionRoutes from "./src/modules/Permission_and_Roles/rolePermission.routes.js";
@@ -15,6 +16,8 @@ import rolePermissionRoutes from "./src/modules/Permission_and_Roles/rolePermiss
 import vendorRoutes from "./src/modules/vendor/vendor.routes.js";
 import vehicleRoutes from "./src/modules/vehicle/vehicle.routes.js";
 import { db } from "./src/utils/firebase.js";
+import { fileURLToPath } from "url";
+import path from "path";
 
 // Load environment variables
 dotenv.config();
@@ -32,8 +35,22 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+ 
+// Required for __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+console.log(" this is the path ", __dirname);
+
+
+// Serve the "upload" folder statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // ✅ Public Routes
 app.post("/api/auth/login", login);
+app.post('/api/auth/register', createSuperAdminController);
+
 app.post("/api/company", createCompany); // optional: if company creation is public
 
 // ✅ Health check or public info
@@ -67,6 +84,7 @@ app.post("/firebase-node", async (req, res) => {
 
 // ✅ All authenticated API routes
 app.use("/api/roles", roleRoutes);
+app.use("/api/shifts", shiftsRoutes);
 app.use("/api/role-permissions", rolePermissionRoutes);
 app.use("/api/drivers", driverRoutes);
 app.use("/api/modules", moduleRoutes);

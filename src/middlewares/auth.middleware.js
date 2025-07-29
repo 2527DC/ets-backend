@@ -17,7 +17,7 @@ export const authenticate = (req, res, next) => {
     // verify token
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    req.user = decoded;  // attach to request for downstream use
+    req.companyId = decoded.companyId;
     next();
 
   } catch (err) {
@@ -30,10 +30,7 @@ export const authenticate = (req, res, next) => {
       return res.status(401).json({ message: "Invalid token signature – don't try to hack! 😅" });
     }
 
-    // if (err.name === '') {
-    //   return res.status(401).json({ message: 'Token expired, please login again.' });
-    // }
-    // fallback for other unexpected errors
+    
     return res.status(401).json({ message: 'Authentication failed.' });
   }
 };

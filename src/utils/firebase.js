@@ -4,7 +4,7 @@ import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 
 const serviceAccount = require("./ets-1-ccb71-firebase-adminsdk-fbsvc-ca2f0803e8.json");
-console.log(" this is the createrequired ", createRequire);
+// console.log(" this is the createrequired ", createRequire);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),

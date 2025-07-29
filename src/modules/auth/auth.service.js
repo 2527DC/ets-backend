@@ -92,3 +92,32 @@ const login = async (email, password) => {
 };
 
 export default { login };
+
+
+
+
+
+export const createSuperAdmin = async ({ email, password, name }) => {
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  if (existingUser) {
+    throw { status: 400, message: 'User already exists' };
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const newUser = await prisma.user.create({
+    data: {
+      email,
+      password: hashedPassword,
+      name,
+      type: 'SUPER_ADMIN',
+      isActive: true,
+    },
+  });
+
+  return {
+    message: 'Super Admin created successfully',
+    userId: newUser.id,
+  };
+};
+

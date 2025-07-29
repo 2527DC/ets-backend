@@ -5,4 +5,5 @@
 
 */
 -- AlterTable
-ALTER TABLE "User" DROP COLUMN "additionalInfo";
+ALTER TABLE "User" DROP COLUMN "additionalInfo",
+ADD COLUMN     "additionalInfo" JSONB;

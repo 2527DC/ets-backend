@@ -1,8 +1,9 @@
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 import {  DocumentStatus } from "@prisma/client";
+import { insertDriverToFirebase } from './driver.utility.js';
 
-export const createDriver = async (driverData, files) => {
+export const createDriver = async (driverData, files ,companyId) => {
 
   
   try {
@@ -11,19 +12,19 @@ export const createDriver = async (driverData, files) => {
       driverData = JSON.parse(driverData);
     }
     const {
+      driverId,
       name,
       email,
       phone,
       licenseNo,
-      vehicleId,
-      companyId,
       isActive = true,
       driverDocuments = [],
     } = driverData;
     // ✅ Validate required fields
-    if (!name || !licenseNo || !companyId) {
-      throw new Error("Missing required driver fields: name, licenseNo, or companyId");
-    }
+
+
+   console.log(" this is the files object", files);
+   
 
     // ✅ Map uploaded files by document type
     const fileMap = {
@@ -41,14 +42,15 @@ export const createDriver = async (driverData, files) => {
       RC: files?.rc || "",
     };
 
-    // Log the files object to debug its structure
+console.log("File map:", fileMap);
+
     console.log("Files object:", files);
 
     const documentsToCreate = driverDocuments.map((doc) => ({
       documentType: doc.documentType,
       status: doc.status || DocumentStatus.PENDING,
       expiryDate: doc.expiryDate ? new Date(doc.expiryDate) : null,
-      filepath: fileMap[doc.documentType] || "ss",
+      filepath: fileMap[doc.documentType] || "uploads/driverDocuments/default.png", // Default path if no file is uploaded
     }));
 
     console.log(" this are the docuemnats to be created", documentsToCreate);
@@ -60,9 +62,9 @@ export const createDriver = async (driverData, files) => {
           email,
           phone,
           licenseNo,
-          vehicleId,
           companyId,
           isActive,
+          driverId, 
           driverDocuments: {
             create: documentsToCreate,
           },
@@ -72,10 +74,13 @@ export const createDriver = async (driverData, files) => {
         },
       });
     });
-
-    return "ann";
+    await insertDriverToFirebase(createdDriver.driverId);
+    return createdDriver;
   } catch (error) {
-    console.error("❌ Driver creation failed:", error.message);
+    if (error.code === 'P2002') {
+      const targetField = error.meta?.target?.[0] || "Field";
+      throw new Error(`${targetField.charAt(0).toUpperCase() + targetField.slice(1)} already exists`);
+    }
     throw new Error("Driver creation failed. Reason: " + error.message);
   }
 };

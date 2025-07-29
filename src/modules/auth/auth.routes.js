@@ -1,10 +1,10 @@
 // src/modules/auth/auth.routes.js
 import express from 'express';
-import { login, register } from './auth.controller.js';
+import { createSuperAdminController, login } from './auth.controller.js';
 
 const router = express.Router();
 
 router.post('/login', login);
-router.post('/register', register);
+router.post('/register', createSuperAdminController);
 
 export default router;

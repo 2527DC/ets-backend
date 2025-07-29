@@ -1,9 +1,9 @@
-import { success } from "zod";
 import * as driverService from "./driver.service.js";
 
 export const createDriver = async (req, res) => {
   try {
 const {driver_data}= req.body
+const companyId = req.companyId; // Assuming companyId is set in the request object
 console.log(" this is the driver data " ,driver_data);
 
 
@@ -16,12 +16,12 @@ console.log(" this is the driver data " ,driver_data);
       return acc;
     }, {});
   
-     const driver = await  driverService.createDriver(driver_data, fileData);
+     const driver = await  driverService.createDriver(driver_data, fileData ,companyId);
 
     res.status(200).json({ success:true, message: "Driver created", files: fileData });
   } catch (error) {
-    console.error("Error creating driver:", error);
-    res.status(500).json({ error: "Something went wrong" });
+    console.error("Error creating driver:", error.message);
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 

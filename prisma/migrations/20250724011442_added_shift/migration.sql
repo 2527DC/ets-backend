@@ -8,7 +8,7 @@ CREATE TYPE "BookingType" AS ENUM ('LOGIN', 'LOGOUT', 'ADHOC');
 CREATE TYPE "BookingStatus" AS ENUM ('PENDING', 'ASSIGNED', 'COMPLETED', 'CANCELLED');
 
 -- AlterTable
-ALTER TABLE "User" ADD COLUMN     "addtionalInfo" JSONB;
+ALTER TABLE "User" ADD COLUMN     "additionalInfo" JSONB;
 
 -- CreateTable
 CREATE TABLE "ShiftCategory" (
