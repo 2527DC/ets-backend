@@ -1,10 +1,16 @@
-// firebase.js (ESM compatible)
 import admin from "firebase-admin";
 import { createRequire } from "module";
+import path from "path";
+
 const require = createRequire(import.meta.url);
 
-const serviceAccount = require("./ets-1-ccb71-firebase-adminsdk-fbsvc-ca2f0803e8.json");
-// console.log(" this is the createrequired ", createRequire);
+const firebasePath = process.env.FIREBASE_CREDENTIAL_PATH;
+
+if (!firebasePath) {
+  throw new Error("Missing FIREBASE_CREDENTIAL_PATH env variable");
+}
+
+const serviceAccount = require(firebasePath);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
