@@ -8,3 +8,5 @@ node_modules
 
 docker-composer.yml 
 # .dockerignore
+
+firebase-adminsdk.json

@@ -3,17 +3,18 @@ import * as roleService from './role.service.js';
 // Create a new role
 export const createRole = async (req, res) => {
   try {
-    const { name, companyId } = req.body;
+    const { name } = req.body;
+    const companyId = req.companyId;
     const role = await roleService.createRole({ name, companyId });
     res.status(201).json(role);
   } catch (error) {
-    console.error('Error creating role:', error);
     res.status(500).json({ error: 'Failed to create role' });
   }
 };
 
 // Get all roles
 export const getAllRoles = async (req, res) => {
+  
   try {
     const roles = await roleService.getAllRoles();
     res.json(roles);
@@ -23,6 +24,18 @@ export const getAllRoles = async (req, res) => {
   }
 };
 
+export const getCompanyRoles = async (req, res) => {
+
+  try {
+    const {companyId} = req.user;
+
+    const roles = await roleService.getCompanyRoles(companyId);
+    res.json(roles);
+  } catch (error) {
+    console.error('Error fetching roles:', error);
+    res.status(500).json({ error: 'Failed to get roles' });
+  }
+};
 // Get role by ID
 export const getRoleById = async (req, res) => {
   try {

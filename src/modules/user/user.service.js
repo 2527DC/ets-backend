@@ -8,15 +8,9 @@ const prisma = new PrismaClient();
 
 const SALT_ROUNDS = 10;
 
-const createEmployee = async (data) => {
+const createEmployee = async (data ,companyId) => {
   try {
-    const {
-      userId,
-      roleId,
-      companyId,
-      additionalInfo,
-      ...userDetails
-    } = data;
+    const {  userId,  roleId, additionalInfo, ...userDetails} = data;
 
     const password = await bcrypt.hash(userId, SALT_ROUNDS);
 

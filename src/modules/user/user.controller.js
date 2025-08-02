@@ -1,8 +1,12 @@
 import userService from './user.service.js';
 
 export const createEmployee = async (req, res) => {
+  
   try {
-    const newEmployee = await userService.createEmployee(req.body);
+ 
+    const {companyId} = req.user;
+
+    const newEmployee = await userService.createEmployee(req.body ,companyId);
 
     return res.status(201).json({
       message: 'Employee created successfully',

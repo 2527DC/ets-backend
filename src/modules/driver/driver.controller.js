@@ -3,7 +3,7 @@ import * as driverService from "./driver.service.js";
 export const createDriver = async (req, res) => {
   try {
 const {driver_data}= req.body
-const companyId = req.companyId; // Assuming companyId is set in the request object
+const {companyId} = req.user; // Assuming companyId is set in the request object
 console.log(" this is the driver data " ,driver_data);
 
 

@@ -6,7 +6,6 @@ export const CreateUserSchema = z.object({
   gender: z.enum(['MALE', 'FEMALE', 'OTHERS']),
   email: z.email('Invalid email format'),
   phone: z.string().optional(),
-  companyId: z.number(),
   roleId: z.number().optional(),
   address: z.string().optional(),
   lat: z.number().optional(),

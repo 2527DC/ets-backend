@@ -74,7 +74,8 @@ const login = async (email, password) => {
     id: user.id,
     type: user.type,
     ...(user.companyId && { companyId: user.companyId }),
-    ...(user.role?.name && { role: user.role.name })
+    // ...(user.role?.name && { role: user.role.name }),
+    ...(user.role?.id && { roleId: user.role.id }) 
   };
 
   const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '8h' });

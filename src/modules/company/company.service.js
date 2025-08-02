@@ -7,7 +7,7 @@ const createCompany = async ( companydata, adminUser, permissions ) => {
   
   const { name, email, phone, address } = companydata;
   const { name: adminName, email: adminEmail, phone: adminPhone, password: adminPassword } = adminUser;
-
+  const hashedPassword = await bcrypt.hash(adminPassword, 10);
   const existingCompany = await prisma.company.findUnique({ where: { email } });
   if (existingCompany) throw { status: 409, message: "Company already exists" };
 
@@ -31,7 +31,7 @@ const createCompany = async ( companydata, adminUser, permissions ) => {
         name: adminName,
         email: adminEmail,
         phone: adminPhone,
-        password: adminPassword,
+        password: hashedPassword,
         companyId: newCompany.id,
         roleId: newRole.id,
         type:"ADMIN"
