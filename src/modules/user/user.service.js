@@ -268,6 +268,98 @@ export const bulkCreateEmployees = async (filePath) => {
     throw new Error(`Failed to process file: ${err.message}`);
   }
 };
+
+ const createDepartments=async ({ name, description, companyId })=>{
+  try {
+  const newTeam = await prisma.department.create({data:{
+    name,
+    description,
+    company: { connect: { id: companyId } }
+  }})
+    return newTeam;
+  } catch (err) {
+    throw new Error(`Failed to process file: ${err.message}`);
+    
+  }
+ }
+
+ const getCompanyDepartments= async (companyId) => {
+  try {
+    const departments = await prisma.department.findMany({
+      where: { companyId },
+      include: {
+        _count: {
+          select: {
+            users: true,
+          },
+        },
+      },
+    });
+
+    return departments.map((dept) => ({
+      id: dept.id,
+      name: dept.name,
+      companyId: dept.companyId,
+      description: dept.description,
+      users: dept._count.users, // 👈 Rename _count.users to users
+    }));
+  } catch (err) {
+    console.error('Error fetching company teams:', err);
+    throw new Error('Failed to fetch company teams');
+  }
+};
+
+const updateDepartments = async (id, data) => {
+  try {
+    return await prisma.department.update({
+      where: { id },
+      data,
+    });
+  } catch (err) {
+    console.error('Error updating team:', err);
+    throw new Error('Failed to update team');
+  }
+}
+
+
+
+const deleteDepartments = async (id) => {
+  try {
+    return await prisma.department.delete({
+      where: { id },
+    });
+  } catch (err) {
+    console.error('Error deleting team:', err);
+    throw new Error('Failed to delete team');
+  }
+}
+
+const getEmployeesByDepartments = async (teamId) => {
+  try {
+    return await prisma.user.findMany({
+      where: {
+        departmentId: teamId,
+        type: 'EMPLOYEE',
+      },
+      select: {
+        id: true,
+        userId: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
+    });
+  } catch (err) {
+    console.error('Error fetching employees by team:', err);
+    throw new Error('Failed to fetch employees by team');
+  }
+}
 export default {
   createEmployee,
   getAllEmployees,
@@ -275,4 +367,9 @@ export default {
   updateEmployee,
   deleteEmployee,
   bulkCreateEmployees
+  ,createDepartments
+  ,getCompanyDepartments
+  ,updateDepartments
+  ,deleteDepartments,
+  getEmployeesByDepartments
 };

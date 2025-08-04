@@ -87,31 +87,14 @@ export const deleteRolePermission = async (req, res) => {
 
 export const getUserPermissions = async (req, res) => {
   try {
-    // 1️⃣ Read Authorization header
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'No token provided' });
+ 
+     const {companyId ,roleId} = req.user
+    const role = await rolePermissionService.getPermissionsFromToken(companyId,roleId);
+
+    if (!role) {
+      return res.status(404).json({ message: 'No permissions found for this role'  });
     }
-
-    const token = authHeader.split(' ')[1];
-
-    // 2️⃣ Get role and permissions from service
-    const role = await rolePermissionService.getPermissionsFromToken(token);
-
-    if (!role || !role.rolePermissions) {
-      return res.status(404).json({ message: 'No permissions found for this role' });
-    }
-
-    // 3️⃣ Transform to frontend-friendly format
-    const allowedModules = role.rolePermissions.map((perm) => ({
-      id: perm.module.key,
-      canRead: perm.canRead,
-      canWrite: perm.canWrite,
-      canDelete: perm.canDelete,
-      children: perm.module.children || [],
-    }));
-
-    return res.json({ allowedModules });
+    return res.json({ allowedModules :role});
 
   } catch (err) {
     console.error('❌ getUserPermissions controller error:', err);

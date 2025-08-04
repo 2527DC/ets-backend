@@ -7,9 +7,12 @@ import {
   getRolePermissionsByRoleId,
   getUserPermissions
 } from './rolePermission.controller.js';
+import { authenticate } from '../../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
+
+router.use(authenticate); 
 // POST /api/role-permissions
 router.post('/', createRolePermission);
 

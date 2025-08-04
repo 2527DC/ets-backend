@@ -3,14 +3,13 @@ import userService from './user.service.js';
 export const createEmployee = async (req, res) => {
   
   try {
- 
     const {companyId} = req.user;
-
     const newEmployee = await userService.createEmployee(req.body ,companyId);
-
-    return res.status(201).json({
-      message: 'Employee created successfully',
-    });
+    if (!newEmployee) {
+      return res.status(400).json({ message: 'Failed to create employee' });
+    }
+    return res.status(201).json({  message: 'Employee created successfully',});
+    
 
   } catch (err) {
     console.error('Create employee error:', err);
@@ -102,3 +101,93 @@ export const uploadEmployees = async (req, res) => {
     });
   }
 };
+
+export const createDepartments = async (req, res) => {
+  try {
+    console.log("create team invoked", req.body);
+    
+    const { name, description } = req.body;
+    const { companyId } = req.user;
+    if (!name ) {
+      return res.status(400).json({ message: 'Name filed is  required' });
+    }
+    const newTeam = await userService.createDepartments({ name, description, companyId });
+    return res.status(201).json({
+      message: 'Team created successfully',
+      team: newTeam,
+    });
+  } catch (err) {
+    console.error('Create team error:', err);
+    return res.status(err.status || 500).json({
+      message: err.message || 'Failed to create team',
+    });
+  }
+}
+
+export  const getCompanyDepartments = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const teams = await userService.getCompanyDepartments(companyId);
+    if (!teams || teams.length === 0) {
+      return res.status(404).json({ message: 'No teams found in company ' , departments: []});  
+    }
+    return res.json(teams);
+  } catch (err) {
+    console.error('Get company teams error:', err);
+    return res.status(500).json({ message: 'Failed to get company teams' });
+  }
+}
+
+export const updateDepartments = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10); // Convert string to number
+    const { name, description } = req.body;
+
+    if (!name || !description) {
+      return res.status(400).json({ message: 'Name and description are required' });
+    }
+
+    const updatedTeam = await userService.updateTeam(id, { name, description });
+
+    return res.json({
+      message: 'Team updated successfully',
+      team: updatedTeam,
+    });
+  } catch (err) {
+    console.error('Update team error:', err);
+    return res.status(err.status || 500).json({
+      message: err.message || 'Failed to update team',
+    });
+  }
+};
+
+export const deleteDepartments = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10); // Convert string to number
+    await userService.deleteDepartments(id);
+    return res.status(204).send();
+  } catch (err) {
+    console.error('Delete team error:', err);
+    return res.status(err.status || 500).json({
+      message: err.message || 'Failed to delete team',
+    });
+  }
+}
+
+export const getEmployeesByDepartments= async (req, res) => {
+  try {
+    console.log(" ths employe by team  invoked");
+    
+    const teamId = parseInt(req.params.id, 10); // Convert string to number
+    const employees = await userService.getEmployeesByTeam(teamId);
+
+    if (!employees || employees.length === 0) {
+      return res.status(404).json({ message: 'No employees found for this team' , employees: []});  
+    }
+
+    return res.json(employees);
+  } catch (err) {
+    console.error('Get employees by team error:', err);
+    return res.status(500).json({ message: 'Failed to get employees for the team' });
+  }
+}

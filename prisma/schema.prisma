@@ -43,12 +43,24 @@ model User {
   roleId           Int?
   company          Company?      @relation(fields: [companyId], references: [id], onDelete: Cascade)
   role             Role?         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  departmentId     Int?
+  department       Department? @relation(fields:[departmentId], references:[id] ,onDelete:Cascade)
+
   address          String?
   lat              Float?
   lng              Float?
   additionalInfo   Json?
   bookings         Booking[]
 }
+
+ model Department {
+  id  Int  @id @default(autoincrement())
+  name String
+  companyId Int 
+  company   Company @relation(fields:[companyId],references:[id] , onDelete: Cascade)
+  description String
+  users User[]
+ }
 
 model Module {
   id              Int              @id @default(autoincrement())
@@ -85,6 +97,7 @@ model Company {
   isActive        Boolean         @default(true)
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+  department      Department[]
   drivers         Driver[]
   roles           Role[]
   users           User[]

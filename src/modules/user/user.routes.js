@@ -3,18 +3,34 @@ import * as controller from './user.controller.js';
 import { authenticate } from '../../middlewares/auth.middleware.js';
 import { validate } from '../../middlewares/validate.middleware.js';
 import { CreateUserSchema } from './user.schema.js';
- import multer from "multer";
+import multer from 'multer';
 import { checkPermission } from '../../middlewares/permissionMiddleware.js';
-const router = express.Router();
-router.use(authenticate); 
 
+const router = express.Router();
 const upload = multer({ dest: 'uploads/' });
 
+// 🔒 Protect all routes
+router.use(authenticate);
+
+// --- TEAM ROUTES ---
+router.post('/create-department', controller.createDepartments);
+router.get('/company-departments', controller.getCompanyDepartments); // ✅ Changed POST to GET
+
+// --- EMPLOYEE BULK UPLOAD ---
 router.post('/employees/bulk-upload', upload.single('file'), controller.uploadEmployees);
-router.post(  '/employe', checkPermission('manage-team.write'),validate(CreateUserSchema),controller.createEmployee );
-router.get('/', controller.getAllEmployees);
-router.get('/:id', controller.getEmployeeById);
-router.put('/:id', controller.updateEmployee);
-router.delete('/:id', controller.deleteEmployee);
+
+// --- EMPLOYEE CRUD ---
+router.post('/employee',checkPermission('manage-team.write'),validate(CreateUserSchema),controller.createEmployee);
+router.get('/department-employees/:id', controller.getEmployeesByDepartments); 
+
+
+router.get('/employees', controller.getAllEmployees); 
+// ❗️Dynamic routes must come last to avoid conflict
+router.put('/update-department/:id', controller.updateDepartments);
+router.delete('/delete-departments/:id', controller.deleteDepartments);
+
+router.get('/employee/:id', controller.getEmployeeById);
+router.put('/employee/:id', controller.updateEmployee);
+router.delete('/employee/:id', controller.deleteEmployee);
 
 export default router;

@@ -31,7 +31,7 @@ export const createRolePermissionWithChildren = async ({ roleId, moduleId, canRe
     createdPermissions.push(childPermission);
   }
 
-  return createdPermissions; // return all created permissions
+  return createdPermissions; 
 };
 
 export const getAllRolePermissions = () => prisma.rolePermission.findMany({ include: { module: true, role: true } });
@@ -45,14 +45,12 @@ export const deleteRolePermission = (id) => prisma.rolePermission.delete({ where
 //       module: true
 //     }
 //   });
-
 //   const allowedModules = permissions.map(p => ({
 //     key: p.module.key,
 //     canRead: p.canRead,
 //     canWrite: p.canWrite,
 //     canDelete: p.canDelete
 //   }));
-
 //   return { allowedModules };
 // };
 
@@ -79,38 +77,47 @@ export const getRolePermissionsByRoleId = async (roleId) => {
   };
 };
 
-export const getPermissionsFromToken = async (token) => {
+export const getPermissionsFromToken = async (companyId,roleId) => {
   try {
-    // 1️⃣ Verify and decode token
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    const companyId = decoded?.companyId;
-    const roleName = decoded?.role;
-
-    if (!companyId || !roleName) {
+    if (!companyId || !roleId) {
       throw new Error('Invalid token payload: missing companyId or role');
     }
-
     // 2️⃣ Find role by companyId + name
-    const role = await prisma.role.findFirst({
+    const role = await prisma.rolePermission.findMany({
       where: {
-        companyId,
-        name: roleName,
+        roleId,
       },
       include: {
-        rolePermissions: {
+        module: {
           include: {
-            module: true,  // include module info
+            children: true, // children modules
           },
         },
       },
     });
 
+
+    const allowedModules = role.map((rp) => ({
+      id: rp.module.key, // module key as ID
+      canRead: rp.canRead,
+      canWrite: rp.canWrite,
+      canDelete: rp.canDelete,
+      children: rp.module.children.map((child) => ({
+        id: child.key, // child module key
+        canRead: false, // Default unless you also fetch child permissions separately
+        canWrite: false,
+        canDelete: false,
+        children: [],   // Nested children can be fetched if needed
+      })),
+    }));
+    
+    
+
     if (!role) {
       throw new Error('Role not found for this company');
     }
 
-    return role;
+    return allowedModules;
 
   } catch (err) {
     console.error('getPermissionsFromToken error:', err);
