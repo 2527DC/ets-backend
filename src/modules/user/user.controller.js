@@ -4,16 +4,18 @@ export const createEmployee = async (req, res) => {
   
   try {
     const {companyId} = req.user;
+    console.log(" this is  the request body " ,req.body);
+    
     const newEmployee = await userService.createEmployee(req.body ,companyId);
     if (!newEmployee) {
       return res.status(400).json({ message: 'Failed to create employee' });
     }
-    return res.status(201).json({  message: 'Employee created successfully',});
+    return res.status(201).json({  message: 'Employee created successfully', employee:newEmployee});
     
 
   } catch (err) {
     console.error('Create employee error:', err);
-
+ 
     return res.status(err.status || 500).json({
       message: err.message || 'Something went wrong',
     });
@@ -173,21 +175,21 @@ export const deleteDepartments = async (req, res) => {
     });
   }
 }
-
-export const getEmployeesByDepartments= async (req, res) => {
+export const getEmployeesByDepartments = async (req, res) => {
   try {
-    console.log(" ths employe by team  invoked");
-    
-    const teamId = parseInt(req.params.id, 10); // Convert string to number
-    const employees = await userService.getEmployeesByTeam(teamId);
+    console.log("Employee by team invoked");
 
-    if (!employees || employees.length === 0) {
-      return res.status(404).json({ message: 'No employees found for this team' , employees: []});  
-    }
+    const teamId = parseInt(req.params.id, 10);
+    const employees = await userService.getEmployeesByDepartments(teamId);
 
-    return res.json(employees);
+    return res.status(200).json({
+      message: employees.length > 0 
+        ? 'Employees fetched successfully' 
+        : 'No employees found for this team',
+      employees,
+    });
   } catch (err) {
     console.error('Get employees by team error:', err);
     return res.status(500).json({ message: 'Failed to get employees for the team' });
   }
-}
+};

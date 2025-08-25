@@ -77,50 +77,79 @@ export const getRolePermissionsByRoleId = async (roleId) => {
   };
 };
 
-export const getPermissionsFromToken = async (companyId,roleId) => {
+
+export const getPermissionsFromToken = async (companyId, roleId) => {
   try {
     if (!companyId || !roleId) {
-      throw new Error('Invalid token payload: missing companyId or role');
+      throw new Error("Invalid token payload: missing companyId or role");
     }
-    // 2️⃣ Find role by companyId + name
-    const role = await prisma.rolePermission.findMany({
-      where: {
-        roleId,
-      },
+
+    // 1️⃣ Get role permissions along with module and its parent
+    const rolePermissions = await prisma.rolePermission.findMany({
+      where: { roleId },
       include: {
         module: {
           include: {
-            children: true, // children modules
+            parent: true, // get parent module if it exists
           },
         },
       },
     });
 
-
-    const allowedModules = role.map((rp) => ({
-      id: rp.module.key, // module key as ID
-      canRead: rp.canRead,
-      canWrite: rp.canWrite,
-      canDelete: rp.canDelete,
-      children: rp.module.children.map((child) => ({
-        id: child.key, // child module key
-        canRead: false, // Default unless you also fetch child permissions separately
-        canWrite: false,
-        canDelete: false,
-        children: [],   // Nested children can be fetched if needed
-      })),
-    }));
-    
-    
-
-    if (!role) {
-      throw new Error('Role not found for this company');
+    if (!rolePermissions || rolePermissions.length === 0) {
+      throw new Error("No role permissions found for this company");
     }
 
-    return allowedModules;
+    // 2️⃣ Build map of modules -> children
+    const moduleMap = new Map();
 
+    rolePermissions.forEach((rp) => {
+      const mod = rp.module;
+
+      if (!mod.parentId) {
+        // Parent module
+        if (!moduleMap.has(mod.key)) {
+          moduleMap.set(mod.key, {
+            id: mod.key,
+            canRead: rp.canRead,
+            canWrite: rp.canWrite,
+            canDelete: rp.canDelete,
+            children: [],
+          });
+        }
+      } else {
+        // Child module
+        const parent = mod.parent;
+        if (!parent) return; // safety check
+
+        let parentEntry = moduleMap.get(parent.key);
+        if (!parentEntry) {
+          // If parent not yet added, add it with default perms
+          parentEntry = {
+            id: parent.key,
+            canRead: true,
+            canWrite: true,
+            canDelete: true,
+            children: [],
+          };
+          moduleMap.set(parent.key, parentEntry);
+        }
+
+        parentEntry.children.push({
+          id: mod.key,
+          canRead: rp.canRead,
+          canWrite: rp.canWrite,
+          canDelete: rp.canDelete,
+        });
+      }
+    });
+
+    // 3️⃣ Convert map to array
+    const allowedModules = Array.from(moduleMap.values());
+
+    return allowedModules;
   } catch (err) {
-    console.error('getPermissionsFromToken error:', err);
-    throw new Error('Failed to get permissions: ' + err.message);
+    console.error("getPermissionsFromToken error:", err);
+    throw new Error("Failed to get permissions: " + err.message);
   }
 };

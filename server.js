@@ -36,7 +36,13 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+
+app.get("/api/ss", (req, res) => {
+  res.send("Hello from the backend!");  
+});
  
+
+
 // Required for __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

@@ -11,15 +11,7 @@ export const createDriver = async (driverData, files ,companyId) => {
     if (typeof driverData === "string") {
       driverData = JSON.parse(driverData);
     }
-    const {
-      driverId,
-      name,
-      email,
-      phone,
-      licenseNo,
-      isActive = true,
-      driverDocuments = [],
-    } = driverData;
+    const { driverId, name,  email,  phone,licenseNo, isActive = true,  driverDocuments = [],} = driverData;
     // ✅ Validate required fields
 
 
@@ -65,6 +57,7 @@ console.log("File map:", fileMap);
           companyId,
           isActive,
           driverId, 
+          company: { connect: { id: companyId } },
           driverDocuments: {
             create: documentsToCreate,
           },
@@ -86,9 +79,16 @@ console.log("File map:", fileMap);
 };
 
 
-export const getAllDrivers = async () => {
-  return await prisma.driver.findMany({ include: { company: true ,driverDocuments :true} });
+export const getAllDrivers = async (companyId) => {
+  return await prisma.driver.findMany({
+    where: { companyId: companyId }, // ✅ correct object syntax
+    include: {
+      company: true,
+      driverDocuments: true
+    }
+  });
 };
+
 
 export const getDriverById = async (id) => {
   return await prisma.driver.findUnique({ where: { id }, include: { company: true } });

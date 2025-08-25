@@ -4,7 +4,8 @@ import * as vendorService from './vendor.service.js';
 export const createVendor = async (req, res) => {
     try {
         const vendorData = req.body;
-        const vendor = await vendorService.createVendor(vendorData);
+        const { companyId } = req.user;
+        const vendor = await vendorService.createVendor(vendorData ,companyId);
         res.status(201).json(vendor);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -13,8 +14,13 @@ export const createVendor = async (req, res) => {
 
 export const getAllVendors = async (req, res) => {
     try {
-        const vendors = await vendorService.getAllVendors();
-        res.status(200).json(vendors);
+        const { companyId } = req.user
+        const vendors = await vendorService.getAllVendors(companyId);
+        if (vendors.length === 0) {
+            return res.status(200).json({ message: 'No vendors found for this company.' ,vendors: []});
+            
+        }
+        res.status(200).json({vendors:vendors});
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -43,15 +49,11 @@ export const updateVendor = async (req, res) => {
 
 export const deleteVendor = async (req, res) => {
     try {
-        const { id } = req.params;
-        const result = await vendorService.deleteVendor(id);
-         if(result.success){
-            res.status(result.code).json(result);
-         }
-       else{
-        res.status(result.code).json(result);
-       }
+      const { id } = req.params;
+      const result = await vendorService.deleteVendor(id);
+      res.status(result.code).json(result);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error.message });
     }
-};
+  };
+  

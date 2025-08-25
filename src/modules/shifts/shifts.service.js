@@ -72,14 +72,30 @@ export const createShift = async (companyId, data) => {
 };
 
 export const getCompanyShifts = async (companyId) => {
-  return await prisma.shift.findMany({
+  const shifts = await prisma.shift.findMany({
     where: { companyId: Number(companyId) },
     include: {
-      shiftCategory: true,
-      Route: true
-    }
+      shiftCategory: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
   });
+
+  // Format the result
+  return shifts.map((shift) => ({
+    id: shift.id,
+    shiftType: shift.shiftType,
+    hour: shift.hour,
+    minute: shift.minute,
+    shiftCategory: shift.shiftCategory.name,
+    shiftCategoryId: shift.shiftCategory.id,
+    isActive: shift.isActive,
+  }));
 };
+
 
 export const getShiftById = async (companyId, shiftId) => {
   return await prisma.shift.findUnique({

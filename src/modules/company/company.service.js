@@ -1,6 +1,7 @@
 // /src/modules/company/company.service.js
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
+import bcrypt from 'bcrypt';
 
 // Create company
 const createCompany = async ( companydata, adminUser, permissions ) => {

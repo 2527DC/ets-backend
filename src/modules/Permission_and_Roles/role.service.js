@@ -6,11 +6,24 @@ export const createRole = async ({ name, companyId }) => {
 };
 
 export const getAllRoles = async () => {
+  console.log("Fetching all roles with permissions");
   
-  console.log(" the methos in service for  all role" );
-  
-  
-  prisma.role.findMany({ include: { rolePermissions: true } });}
+  try {
+    const roles = await prisma.role.findMany({
+      include: { 
+        rolePermissions: {
+          include: {
+            module: true  // Include module details if needed
+          }
+        } 
+      }
+    });
+    return roles;
+  } catch (error) {
+    console.error("Error fetching roles:", error);
+    throw error;  // Or handle the error as per your application's needs
+  }
+};
   
 export const getCompanyRoles = async (companyId) => {
   console.log(" the methos in service for company role" );

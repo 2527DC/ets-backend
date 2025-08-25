@@ -1,8 +1,10 @@
 import express from 'express';
 import * as controller from './driver.controller.js';
 import uploadDocuments from '../../middlewares/upload.middleware.js';
+import { authenticate } from '../../middlewares/auth.middleware.js';
 
 const router = express.Router();
+router.use(authenticate);
 
 // POST /api/drivers
 router.post("/", uploadDocuments, controller.createDriver )

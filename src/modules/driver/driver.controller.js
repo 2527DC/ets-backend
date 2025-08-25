@@ -5,7 +5,7 @@ export const createDriver = async (req, res) => {
 const {driver_data}= req.body
 const {companyId} = req.user; // Assuming companyId is set in the request object
 console.log(" this is the driver data " ,driver_data);
-
+  
 
     const uploadedFiles = req.files;
     console.log("Uploaded Files:", uploadedFiles);
@@ -28,9 +28,9 @@ console.log(" this is the driver data " ,driver_data);
 
 export const getAllDrivers = async (req, res) => {
   try {
-    const driver = await driverService.getAllDrivers();
+     const {companyId} = req.user 
+    const driver = await driverService.getAllDrivers(companyId);
     if (!driver) return res.status(404).json({ message: "Driver not found" });
-    res.json(driver);
     res.json(driver);
   } catch (err) {
     console.error("Get drivers error:", err);

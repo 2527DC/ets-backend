@@ -10,22 +10,33 @@ const SALT_ROUNDS = 10;
 
 const createEmployee = async (data ,companyId) => {
   try {
-    const {  userId,  roleId, additionalInfo, ...userDetails} = data;
+    const {  userId, departmentId,alternate_mobile_number,dateRange,roleId, additionalInfo, ...userDetails } = data;
+    // const {startDate,endDate}=dateRange
+    console.log(" this  is the  speial need range date ", data);
+    console.log("  this is the requested employe data ", userDetails);
 
     const password = await bcrypt.hash(userId, SALT_ROUNDS);
 
     const employeeData = {
       ...userDetails,
       userId,
+      alternateMobileNumber:alternate_mobile_number,
       password,
       type: 'EMPLOYEE',
+      specialNeed: data?.specialNeed || null,
+      specialNeedStart: dateRange?.startDate ? new Date(dateRange?.startDate) : null,
+      specialNeedEnd: dateRange?.endDate ? new Date(dateRange?.endDate) : null,
       additionalInfo: additionalInfo,
       ...(companyId && { company: { connect: { id: companyId } } }),
+      ...(departmentId && { department: { connect: { id: departmentId } } }),
       ...(roleId && { role: { connect: { id: roleId } } }),
     };
+    
 
+    console.log("  this is the requested employe data ", employeeData);
+    
     return await prisma.user.create({ data: employeeData });
-
+    // return "";
   } catch (error) {
     console.error('Error creating employee:', error);
 
@@ -34,6 +45,12 @@ const createEmployee = async (data ,companyId) => {
       const err = new Error(`Duplicate entry on ${field}`);
       err.status = 409;
       throw err;
+    }
+    if (error.code === 'P2025') {
+      throw {
+        status: 400,
+        message: 'Invalid department ID. Department not found.',
+      };
     }
 
     const err = new Error('Failed to create employee');
@@ -347,19 +364,37 @@ const getEmployeesByDepartments = async (teamId) => {
         name: true,
         email: true,
         phone: true,
+        gender: true,
         role: {
           select: {
             id: true,
-            name: true
-          }
-        }
-      }
+            name: true,
+          },
+        },
+        // Additional fields you want to include
+        address: true,
+        companyId: true,
+        departmentId: true,
+        lat: true,
+        lng: true,
+        additionalInfo: true,
+        specialNeed: true,
+        specialNeedStart: true,
+        specialNeedEnd: true,
+        isActive: true,
+        type: true,
+        landmark: true,
+        alternateMobileNumber: true,
+        
+        // password, createdAt, updatedAt are excluded
+      },
     });
   } catch (err) {
     console.error('Error fetching employees by team:', err);
     throw new Error('Failed to fetch employees by team');
   }
-}
+};
+
 export default {
   createEmployee,
   getAllEmployees,

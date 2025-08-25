@@ -4,70 +4,81 @@ const prisma = new PrismaClient();
 
 // modules data (parent + submodules)
 const modules = [
-  { key: 'dashboard', name: 'Dashboard', submodules: [] },
   { key: 'role-management', name: 'Role Management', submodules: [] },
-  { key: 'user-administrator', name: 'User Administrator', submodules: [] },
   { key: 'manage-team', name: 'Manage Team', submodules: [] },
   { key: 'manage-clients', name: 'Manage Clients', submodules: [] },
   {
-    key: 'scheduling-management', name: 'Scheduling Management',
+    key: 'scheduling-management', 
+    name: 'Scheduling Management',
     submodules: [
       { key: 'manage-shift', name: 'Manage Shift' },
       { key: 'manage-shift-categories', name: 'Shift Categories' }
     ]
   },
   { key: 'manage-drivers', name: 'Manage Drivers', submodules: [] },
-  { key: 'manage-vendors', name: 'Manage Vendors', submodules: [] },
-  {
-    key: 'manage-contracts', name: 'Manage Contracts',
+  { 
+    key: 'manage-vehicles', 
+    name: 'Manage Vehicles', 
     submodules: [
-      { key: 'vehicle-contract', name: 'Vehicle Contract' },
-      { key: 'adjustment-penalty', name: 'Adjustment & Penalty' },
-      { key: 'cost-center', name: 'Cost Center' },
-      { key: 'show-contractsInMaster', name: 'Master Contracts' },
-      { key: 'AllContracts', name: 'New Contracts' }
-    ]
+      { key: 'manage-vehicleType', name: 'Manage VehicleType' }
+    ] 
   },
+  { key: 'manage-vendors', name: 'Manage Vendors', submodules: [] },
   { key: 'routing', name: 'Manage Routing', submodules: [] },
   { key: 'tracking', name: 'Manage Tracking', submodules: [] },
   { key: 'audit-report', name: 'Audit Report', submodules: [] },
-  {
-    key: 'security-dashboard', name: 'Security Dashboard',
-    submodules: [
-      { key: 'sms-config', name: 'SMS Config' }
-    ]
-  },
   { key: 'admin-dashboard', name: 'Admin Dashboard', submodules: [] },
-  { key: 'employee-dashboard', name: 'Employee Dashboard', submodules: [] }
 ];
 
 async function main() {
   console.log('🚀 Seeding modules...');
 
+  // First, create all parent modules
   for (const mod of modules) {
-    // Create parent module
-    const parent = await prisma.module.upsert({
+    await prisma.module.upsert({
       where: { key: mod.key },
-      update: { name: mod.name, isActive: true },
+      update: { 
+        name: mod.name, 
+        isActive: true,
+        parentId: null // Ensure parentId is null for top-level modules
+      },
       create: {
         key: mod.key,
         name: mod.name,
-        isActive: true
+        isActive: true,
+        parentId: null // Explicitly set to null for top-level modules
       }
     });
+  }
 
-    // Create submodules
-    for (const sub of mod.submodules) {
-      await prisma.module.upsert({
-        where: { key: sub.key },
-        update: { name: sub.name, isActive: true, parentId: parent.id },
-        create: {
-          key: sub.key,
-          name: sub.name,
-          parentId: parent.id,
-          isActive: true
-        }
+  // Then, create all submodules with their proper parent relationships
+  for (const mod of modules) {
+    if (mod.submodules.length > 0) {
+      const parentModule = await prisma.module.findUnique({
+        where: { key: mod.key }
       });
+
+      if (!parentModule) {
+        console.error(`Parent module not found: ${mod.key}`);
+        continue;
+      }
+
+      for (const sub of mod.submodules) {
+        await prisma.module.upsert({
+          where: { key: sub.key },
+          update: { 
+            name: sub.name, 
+            isActive: true, 
+            parentId: parentModule.id 
+          },
+          create: {
+            key: sub.key,
+            name: sub.name,
+            parentId: parentModule.id,
+            isActive: true
+          }
+        });
+      }
     }
   }
 

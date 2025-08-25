@@ -15,10 +15,23 @@ export const authenticate = async (req, res, next) => {
     const decoded = jwt.verify(token, JWT_SECRET);
     const { id, companyId, roleId, role, type } = decoded;
 
+
+
+    // 🚀 SUPER_ADMIN bypass: no DB calls, full permissions
+    if (type === 'SUPER_ADMIN') {
+      req.user = {
+        id,
+        type,
+        role,
+        roleId,
+        companyId,
+        permissions: ['*'] // or full list if you want
+      };
+      return next();
+    }
     if (!id || !roleId) {
       return res.status(401).json({ message: 'Invalid token payload' });
     }
-
     // 🔍 Fetch only necessary fields from rolePermission and module
     const rolePermissions = await prisma.rolePermission.findMany({
       where: { roleId },
@@ -62,3 +75,4 @@ export const authenticate = async (req, res, next) => {
     return res.status(401).json({ message: 'Authentication failed.' });
   }
 };
+
