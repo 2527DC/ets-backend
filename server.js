@@ -18,7 +18,7 @@ import vehicleRoutes from "./src/modules/vehicle/vehicle.routes.js";
 import { db } from "./src/utils/firebase.js";
 import { fileURLToPath } from "url";
 import path from "path";
-
+import seedRoutes from "./src/seed/modules.seed.js";
 // Load environment variables
 dotenv.config();
 
@@ -37,11 +37,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
-app.get("/api/ss", (req, res) => {
-  res.send("Hello from the backend!");  
-});
- 
-
 
 // Required for __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -55,14 +50,12 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ✅ Public Routes
 app.post("/api/auth/login", login);
+app.use("/api/seed", seedRoutes);
 app.post('/api/auth/register', createSuperAdminController);
 
 app.post("/api/company", createCompany); // optional: if company creation is public
 
-// ✅ Health check or public info
-app.get("/api/message", (req, res) => {
-  res.send("✅ Fleet backend API is running");
-});
+
 
 // ✅ Firebase init (optional to protect it with auth)
 app.post("/firebase-node", async (req, res) => {

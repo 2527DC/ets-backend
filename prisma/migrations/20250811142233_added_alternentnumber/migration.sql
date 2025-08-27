@@ -1,4 +1,0 @@
--- AlterTable
-ALTER TABLE "User" ADD COLUMN     "alternateMobileNumber" TEXT,
-ALTER COLUMN "lat" SET DATA TYPE TEXT,
-ALTER COLUMN "lng" SET DATA TYPE TEXT;
