@@ -17,14 +17,14 @@ export const login = async (req, res) => {
 
 
 export const createSuperAdminController = async (req, res) => {
-  const { email, password, name } = req.body;
+  const { email, password, name  ,phone} = req.body;
 
-  if (!email || !password || !name) {
+  if (!email || !password || !name|| !phone) {
     return res.status(400).json({ message: 'Email, password, and name are required' });
   }
 
   try {
-    const result = await createSuperAdmin({ email, password, name });
+    const result = await createSuperAdmin({ email, password, name  ,phone});
     return res.status(201).json(result);
   } catch (err) {
     console.error('Create Super Admin Error:', err);

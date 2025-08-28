@@ -365,10 +365,16 @@ const deleteDepartments = async (id) => {
       where: { id },
     });
   } catch (err) {
-    console.error('Error deleting team:', err);
-    throw new Error('Failed to delete team');
+    // Check if the error is Prisma P2025 (record not found)
+    if (err.code === 'P2025') {
+      console.warn(`Department with id ${id} not found.`);
+      return null; // or throw a custom error if you prefer
+    }
+    console.error('Error deleting department:', err);
+    throw new Error('Failed to delete department');
   }
-}
+};
+
 
 const getEmployeesByDepartments = async (teamId, isActive) => {
   try {

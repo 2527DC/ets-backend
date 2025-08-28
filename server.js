@@ -19,6 +19,7 @@ import { db } from "./src/utils/firebase.js";
 import { fileURLToPath } from "url";
 import path from "path";
 import seedRoutes from "./src/seed/modules.seed.js";
+import { truncateTable } from "./src/utils/truncateTable.js";
 // Load environment variables
 dotenv.config();
 
@@ -35,6 +36,9 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+
+app.post("/api/truncate", truncateTable);
 
 
 

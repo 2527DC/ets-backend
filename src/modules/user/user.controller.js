@@ -175,15 +175,33 @@ export const updateDepartments = async (req, res) => {
 export const deleteDepartments = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10); // Convert string to number
-    await userService.deleteDepartments(id);
-    return res.status(204).send();
+    const deletedDepartment = await userService.deleteDepartments(id);
+
+    if (!deletedDepartment) {
+      return res.status(404).json({
+        success: false,
+        message: `Department  not found to Delete .`,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Department deleted successfully.',
+      data: {
+        id: deletedDepartment.id,
+        name: deletedDepartment.name, // optional, depends on what you want to return
+      },
+    });
   } catch (err) {
-    console.error('Delete team error:', err);
+    console.error('Delete department error:', err);
     return res.status(err.status || 500).json({
-      message: err.message || 'Failed to delete team',
+      status: 'error',
+      message: err.message || 'Failed to delete department',
     });
   }
-}
+};
+
+
 export const getEmployeesByDepartments = async (req, res) => {
   try {
     console.log("Employee by team invoked");
