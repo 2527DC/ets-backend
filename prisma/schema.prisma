@@ -90,20 +90,22 @@ model RolePermission {
 }
 
 model Company {
-  id              Int             @id @default(autoincrement())
-  name            String
-  email           String?         @unique
-  phone           String?         @unique
-  address         String?
-  isActive        Boolean         @default(true)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String?  @unique
+  phone     String?  @unique
+  address   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   department      Department[]
   drivers         Driver[]
   roles           Role[]
   users           User[]
   shifts          Shift[]
   shiftCategories ShiftCategory[]
+  bookings        Booking[] // 👈 new relation
 }
 
 model Role {
@@ -243,6 +245,16 @@ model ShiftCategory {
   updatedAt   DateTime @updatedAt
 }
 
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
 model Shift {
   id              Int           @id @default(autoincrement())
   shiftType       ShiftType
@@ -253,9 +265,13 @@ model Shift {
   company         Company       @relation(fields: [companyId], references: [id])
   companyId       Int
   isActive        Boolean       @default(true)
+  days            DayOfWeek[] // 👈 array of enums = multiple days
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
-  Route           Route[]
+
+  // 👇 new relation
+  bookings Booking[]
+  Route    Route[]
 }
 
 enum BookingType {
@@ -274,16 +290,21 @@ enum BookingStatus {
 model Booking {
   id            Int           @id @default(autoincrement())
   userId        Int
+  companyId     Int // 👈 new foreign key to company
+  shiftId       Int? // optional link to shift
   pickupAddress String
   dropAddress   String
   status        BookingStatus @default(PENDING)
   bookingType   BookingType
   isAdhoc       Boolean       @default(false)
-  user          User          @relation(fields: [userId], references: [id])
 
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  RouteBooking RouteBooking[]
+  user          User           @relation(fields: [userId], references: [id])
+  company       Company        @relation(fields: [companyId], references: [id]) // link to company
+  shift         Shift?         @relation(fields: [shiftId], references: [id])
+  scheduledTime DateTime
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  RouteBooking  RouteBooking[]
 }
 
 model Route {

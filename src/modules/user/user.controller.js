@@ -116,24 +116,38 @@ export const uploadEmployees = async (req, res) => {
 export const createDepartments = async (req, res) => {
   try {
     console.log("create team invoked", req.body);
-    
+
     const { name, description } = req.body;
-    const { companyId } = req.user;
-    if (!name ) {
-      return res.status(400).json({ message: 'Name filed is  required' });
+    const { companyId } = req.user; // comes from auth
+
+    if (!name) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Name field is required",
+      });
     }
-    const newTeam = await userService.createDepartments({ name, description, companyId });
+
+    const newTeam = await userService.createDepartments({
+      name,
+      description,
+      companyId,
+    });
+
     return res.status(201).json({
-      message: 'Team created successfully',
-      team: newTeam,
+      status: "success",
+      message: "Team created successfully",
+      data: newTeam,
     });
   } catch (err) {
-    console.error('Create team error:', err);
+    console.error("Create team error:", err);
+
     return res.status(err.status || 500).json({
-      message: err.message || 'Failed to create team',
+      status: "error",
+      message: err.message || "Failed to create team",
     });
   }
-}
+};
+
 
 export  const getCompanyDepartments = async (req, res) => {
   try {

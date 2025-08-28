@@ -305,19 +305,30 @@ export const bulkCreateEmployees = async (filePath) => {
   }
 };
 
- const createDepartments=async ({ name, description, companyId })=>{
+const createDepartments = async ({ name, description, companyId }) => {
   try {
-  const newTeam = await prisma.department.create({data:{
-    name,
-    description,
-    company: { connect: { id: companyId } }
-  }})
-    return newTeam;
+    console.log("this is the company id in service", companyId);
+
+    return await prisma.department.create({
+      data: {
+        name,
+        description,
+        Company: { connect: { id: companyId } }, // ensure `Company` matches schema
+      },
+    });
   } catch (err) {
-    throw new Error(`Failed to process file: ${err.message}`);
-    
+    if (err.code === "P2025") {
+      // Company not found
+      const customError = new Error(`Company with id ${companyId} not found`);
+      customError.status = 404;
+      throw customError;
+    }
+
+    const customError = new Error(`Failed to create department: ${err.message}`);
+    customError.status = 500;
+    throw customError;
   }
- }
+};
 
  const getCompanyDepartments= async (companyId) => {
   try {
