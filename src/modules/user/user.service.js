@@ -8,56 +8,50 @@ const prisma = new PrismaClient();
 
 const SALT_ROUNDS = 10;
 
-const createEmployee = async (data ,companyId) => {
+const createEmployee = async (data, companyId) => {
   try {
-    const {  userId, departmentId,alternate_mobile_number,dateRange,roleId, additionalInfo, ...userDetails } = data;
-    // const {startDate,endDate}=dateRange
-    console.log(" this  is the  speial need range date ", data);
-    console.log("  this is the requested employe data ", userDetails);
+    const { userId, departmentId, alternate_mobile_number, dateRange, roleId, additionalInfo, ...userDetails } = data;
 
     const password = await bcrypt.hash(userId, SALT_ROUNDS);
 
     const employeeData = {
       ...userDetails,
       userId,
-      alternateMobileNumber:alternate_mobile_number,
+      alternative_phone: alternate_mobile_number,
       password,
       type: 'EMPLOYEE',
       specialNeed: data?.specialNeed || null,
       specialNeedStart: dateRange?.startDate ? new Date(dateRange?.startDate) : null,
       specialNeedEnd: dateRange?.endDate ? new Date(dateRange?.endDate) : null,
-      additionalInfo: additionalInfo,
+      additionalInfo,
       ...(companyId && { company: { connect: { id: companyId } } }),
       ...(departmentId && { department: { connect: { id: departmentId } } }),
       ...(roleId && { role: { connect: { id: roleId } } }),
     };
-    
 
-    console.log("  this is the requested employe data ", employeeData);
-    
     return await prisma.user.create({ data: employeeData });
-    // return "";
   } catch (error) {
-    console.error('Error creating employee:', error);
+    // console.error("Error creating employee:", error);
 
-    if (error.code === 'P2002') {
-      const field = error.meta?.target?.join(', ') || 'field';
+    if (error.code === "P2002") {
+      const field = error.meta?.target?.join(", ") || "field";
       const err = new Error(`Duplicate entry on ${field}`);
       err.status = 409;
       throw err;
     }
-    if (error.code === 'P2025') {
-      throw {
-        status: 400,
-        message: 'Invalid department ID. Department not found.',
-      };
+
+    if (error.code === "P2025") {
+      const err = new Error("Invalid department ID. Department not found.");
+      err.status = 400;
+      throw err;
     }
 
-    const err = new Error('Failed to create employee');
+    const err = new Error("Failed to create employee");
     err.status = 500;
     throw err;
   }
 };
+
 
 
 
@@ -128,17 +122,42 @@ const getEmployeeById = async (id) => {
 };
 
 
-const updateEmployee = async (id, data) => {
-  if (data.password) {
-    data.password = await bcrypt.hash(data.password, SALT_ROUNDS);
-  }
+export const updateEmployee = async (id, data) => {
+  try {
+    if (data.password) {
+      data.password = await bcrypt.hash(data.password, SALT_ROUNDS);
+    }
 
-  return await prisma.user.update({
-    where: { id },
-    data,
-    include: { role: true, company: true }
-  });
+    return await prisma.user.update({
+      where: { id },
+      data,
+      include: { role: true, company: true }
+    });
+  } catch (error) {
+    // Handle Prisma specific errors
+   
+      if (error.code === "P2002") {
+        // Unique constraint violation (like email already exists)
+        throw {
+          status: 400,
+          message: `Duplicate field: ${error.meta.target.join(", ")} already exists`
+        };
+      } else if (error.code === "P2025") {
+        // Record not found
+        throw {
+          status: 404,
+          message: "Employee not found"
+        };
+      }
+
+    // Unknown errors
+    throw {
+      status: 500,
+      message: "Internal server error while updating employee"
+    };
+  }
 };
+
 
 const deleteEmployee = async (id) => {
   return await prisma.user.delete({ where: { id } });
@@ -351,12 +370,13 @@ const deleteDepartments = async (id) => {
   }
 }
 
-const getEmployeesByDepartments = async (teamId) => {
+const getEmployeesByDepartments = async (teamId, isActive) => {
   try {
     return await prisma.user.findMany({
       where: {
         departmentId: teamId,
         type: 'EMPLOYEE',
+        ...(isActive !== undefined && { isActive: isActive }), // Only add if provided
       },
       select: {
         id: true,
@@ -371,7 +391,6 @@ const getEmployeesByDepartments = async (teamId) => {
             name: true,
           },
         },
-        // Additional fields you want to include
         address: true,
         companyId: true,
         departmentId: true,
@@ -384,9 +403,7 @@ const getEmployeesByDepartments = async (teamId) => {
         isActive: true,
         type: true,
         landmark: true,
-        alternateMobileNumber: true,
-        
-        // password, createdAt, updatedAt are excluded
+        alternative_phone: true,
       },
     });
   } catch (err) {
@@ -395,8 +412,31 @@ const getEmployeesByDepartments = async (teamId) => {
   }
 };
 
+
+const searchEmployees = async (query, isActive) => {
+  return prisma.user.findMany({
+    where: {
+      AND: [
+        {
+          OR: [
+            { name: { contains: query, mode: "insensitive" } },
+            { email: { contains: query, mode: "insensitive" } },
+            { userId: { contains: query, mode: "insensitive" } },
+          ],
+        },
+        ...(isActive !== undefined ? [{ isActive }] : []),
+      ],
+    },
+    take: 10, // limit results to 10
+    orderBy: {
+      createdAt: "desc", // optional: newest employees first
+    },
+ 
+  });
+};
+
 export default {
-  createEmployee,
+  createEmployee,searchEmployees,
   getAllEmployees,
   getEmployeeById,
   updateEmployee,

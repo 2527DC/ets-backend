@@ -25,32 +25,33 @@ enum SpecialNeeds {
 }
 
 model User {
-  id               Int           @id @default(autoincrement())
-  userId           String?       @unique
-  name             String
-  gender           Gender?
-  specialNeed      SpecialNeeds?
-  specialNeedStart DateTime? // e.g., pregnancy start date
-  specialNeedEnd   DateTime? // e.g., expected delivery date or support period end
-  email            String        @unique
-  password         String
-  phone            String?       @unique
-  type             UserType
-  isActive         Boolean       @default(true)
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  companyId        Int?
-  roleId           Int?
-  company          Company?      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  role             Role?         @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  departmentId     Int?
-  department       Department?   @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-
-  address        String?
-  lat            Float?
-  lng            Float?
-  additionalInfo Json?
-  bookings       Booking[]
+  id                Int           @id @default(autoincrement())
+  userId            String?       @unique
+  name              String
+  gender            Gender?
+  specialNeed       SpecialNeeds?
+  specialNeedStart  DateTime? // e.g., pregnancy start date
+  specialNeedEnd    DateTime? // e.g., expected delivery date or support period end
+  email             String        @unique
+  password          String
+  phone             String        @unique
+  alternative_phone String?
+  type              UserType
+  isActive          Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  companyId         Int?
+  roleId            Int?
+  company           Company?      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  role              Role?         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  departmentId      Int?
+  department        Department?   @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  landmark          String?
+  address           String?
+  lat               String?
+  lng               String?
+  additionalInfo    Json?
+  bookings          Booking[]
 }
 
 model Department {

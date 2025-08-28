@@ -1,26 +1,25 @@
 import userService from './user.service.js';
 
 export const createEmployee = async (req, res) => {
-  
   try {
-    const {companyId} = req.user;
-    console.log(" this is  the request body " ,req.body);
-    
-    const newEmployee = await userService.createEmployee(req.body ,companyId);
-    if (!newEmployee) {
-      return res.status(400).json({ message: 'Failed to create employee' });
-    }
-    return res.status(201).json({  message: 'Employee created successfully', employee:newEmployee});
-    
+    const { companyId } = req.user;
+    const newEmployee = await userService.createEmployee(req.body, companyId);
 
+    return res.status(201).json({
+      success: true,
+      message: "Employee created successfully",
+      data: newEmployee,
+    });
   } catch (err) {
-    console.error('Create employee error:', err);
- 
+    // console.error("Create employee error:", err);
+
     return res.status(err.status || 500).json({
-      message: err.message || 'Something went wrong',
+      success: false,
+      message: err.message || "Something went wrong",
     });
   }
 };
+
 
 export const getAllEmployees = async (req, res) => {
   try {
@@ -52,12 +51,22 @@ export const updateEmployee = async (req, res) => {
   try {
     const id = Number(req.params.id);
     const updatedEmployee = await userService.updateEmployee(id, req.body);
-    return res.json(updatedEmployee);
+
+    return res.status(200).json({
+      success: true,
+      message: "Employee updated successfully",
+      data: updatedEmployee
+    });
   } catch (err) {
-    console.error('Update employee error:', err);
-    return res.status(err.status || 500).json({ message: err.message || 'Failed to update employee' });
+    console.error("Update employee error:", err);
+
+    return res.status(err.status || 500).json({
+      success: false,
+      message: err.message || "Failed to update employee"
+    });
   }
 };
+
 
 export const deleteEmployee = async (req, res) => {
   try {
@@ -179,8 +188,13 @@ export const getEmployeesByDepartments = async (req, res) => {
   try {
     console.log("Employee by team invoked");
 
-    const teamId = parseInt(req.params.id, 10);
-    const employees = await userService.getEmployeesByDepartments(teamId);
+    const teamId = parseInt(req.params.id, 10); // from URL param
+    const { isActive } = req.query; // from query param
+
+    // Convert isActive to boolean if provided
+    const activeFilter = isActive !== undefined ? isActive === "true" : undefined;
+
+    const employees = await userService.getEmployeesByDepartments(teamId, activeFilter);
 
     return res.status(200).json({
       message: employees.length > 0 
@@ -193,3 +207,62 @@ export const getEmployeesByDepartments = async (req, res) => {
     return res.status(500).json({ message: 'Failed to get employees for the team' });
   }
 };
+
+
+
+export const searchEmployees = async (req, res) => {
+  try {
+    const { q, isActive } = req.query;
+
+    if (!q) {
+      return res.status(400).json({ error: "Search query (q) is required" });
+    }
+
+    const employees = await userService.searchEmployees(
+      q,
+      isActive !== undefined ? isActive === "true" : undefined
+    );
+
+    // Format the response
+    const formattedEmployees = employees.map(emp => ({
+      id: emp.id,
+      employeeCode: emp.userId,
+      name: emp.name,
+      email: emp.email,
+      phone: emp.phone,
+      alternativePhone: emp.alternative_phone,
+      gender: emp.gender,
+      type: emp.type,
+      isActive: emp.isActive,
+      address: {
+        landmark: emp.landmark,
+        address: emp.address,
+        lat: emp.lat,
+        lng: emp.lng,
+      },
+      departmentId: emp.departmentId,
+      companyId: emp.companyId,
+      specialNeed: emp.specialNeed,
+      specialNeedPeriod: emp.specialNeedStart && emp.specialNeedEnd
+        ? {
+            start: emp.specialNeedStart,
+            end: emp.specialNeedEnd,
+          }
+        : null,
+      additionalInfo: emp.additionalInfo || {},
+      createdAt: emp.createdAt,
+      updatedAt: emp.updatedAt,
+    }));
+
+    res.json({
+      success: true,
+      total: formattedEmployees.length,
+      employees: formattedEmployees,
+    });
+
+  } catch (error) {
+    console.error("Error searching employees:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+

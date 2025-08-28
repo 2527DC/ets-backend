@@ -42,7 +42,6 @@ app.use(express.urlencoded({ extended: true }));
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-console.log(" this is the path ", __dirname);
 
 
 // Serve the "upload" folder statically

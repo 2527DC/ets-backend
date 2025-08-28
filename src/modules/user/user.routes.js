@@ -22,13 +22,13 @@ router.post('/employees/bulk-upload', upload.single('file'), controller.uploadEm
 // --- EMPLOYEE CRUD ---
 router.post('/employee',checkPermission('manage-team.write'),validate(CreateUserSchema),controller.createEmployee);
 router.get('/department-employees/:id', controller.getEmployeesByDepartments); 
-
+router.get("/employee/search", controller.searchEmployees);
 
 router.get('/employees', controller.getAllEmployees); 
 // ❗️Dynamic routes must come last to avoid conflict
 router.put('/update-department/:id', controller.updateDepartments);
 router.delete('/delete-departments/:id', controller.deleteDepartments);
-
+    
 router.get('/employee/:id', controller.getEmployeeById);
 router.put('/employee/:id', controller.updateEmployee);
 router.delete('/employee/:id', controller.deleteEmployee);
