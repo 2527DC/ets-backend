@@ -12,7 +12,7 @@ import shiftsRoutes from "./src/modules/shifts/shifts.routes.js";
 import moduleRoutes from "./src/modules/modules/ module.routes.js";
 import userRoutes from "./src/modules/user/user.routes.js";
 import rolePermissionRoutes from "./src/modules/Permission_and_Roles/rolePermission.routes.js";
-
+import cutOffWindowsRoutes from "./src/modules/cutOffWindow/cutoffWindow.Routes.js";
 import vendorRoutes from "./src/modules/vendor/vendor.routes.js";
 import vehicleRoutes from "./src/modules/vehicle/vehicle.routes.js";
 import { db } from "./src/utils/firebase.js";
@@ -94,6 +94,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/companies", companyRoutes);
 app.use("/api/vehicles", vehicleRoutes);
 app.use("/api/vendors", vendorRoutes);
+app.use("/api", cutOffWindowsRoutes);
 // ✅ 404 Handler (must be at the end)
 app.use((req, res) => {
   res.status(404).json({ message: "❌ Route not found" });
