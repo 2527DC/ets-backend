@@ -1,5 +1,5 @@
 import express from 'express';
-import { cutoffWindowController } from './cutoffWindow.Controller.js';
+import { cutoffWindowController } from './cutoffWindow.controller.js';
 
 const router = express.Router();
 
