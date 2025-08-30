@@ -1,8 +1,6 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-
-import { createSuperAdminController, login } from "./src/modules/auth/auth.controller.js";
 import { createCompany } from "./src/modules/company/company.controller.js";
 
 import companyRoutes from "./src/modules/company/company.routes.js";
@@ -11,6 +9,7 @@ import roleRoutes from "./src/modules/Permission_and_Roles/role.routes.js";
 import shiftsRoutes from "./src/modules/shifts/shifts.routes.js";
 import moduleRoutes from "./src/modules/modules/ module.routes.js";
 import userRoutes from "./src/modules/user/user.routes.js";
+import authRoute from "./src/modules/auth/auth.routes.js";
 import rolePermissionRoutes from "./src/modules/Permission_and_Roles/rolePermission.routes.js";
 import cutOffWindowsRoutes from "./src/modules/cutOffWindow/cutoffWindow.Routes.js";
 import vendorRoutes from "./src/modules/vendor/vendor.routes.js";
@@ -24,7 +23,7 @@ import { truncateTable } from "./src/utils/truncateTable.js";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(
@@ -34,8 +33,11 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
+
 app.use(express.urlencoded({ extended: true }));
+
+app.use(express.json());
+app.use(express.text({ type: '*/*' }));
 
 
 app.post("/api/truncate", truncateTable);
@@ -46,16 +48,18 @@ app.post("/api/truncate", truncateTable);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-
+app.get("/", (req, res) => {
+  res.send("🚀 ETS Backend is running!");
+})
 
 // Serve the "upload" folder statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ✅ Public Routes
-app.post("/api/auth/login", login);
+app.use("/api/auth", authRoute);
 app.use("/api/seed", seedRoutes);
-app.post('/api/auth/register', createSuperAdminController);
 
+ // optional: if super admin creation is public
 app.post("/api/company", createCompany); // optional: if company creation is public
 
 

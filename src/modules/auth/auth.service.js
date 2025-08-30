@@ -81,12 +81,12 @@ const login = async (email, password) => {
   const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '8h' });
 
   return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    type: user.type.toLowerCase(),
-    ...(user.company && { companyId: user.company.id, companyName: user.company.name }),
-    ...(user.role && { role: user.role.name }),
+    user:{id: user.id,
+      name: user.name,
+      email: user.email,
+      type: user.type.toLowerCase(),
+      companyName: user.company.name ||null ,
+      role: user.role.name },
     allowedModules,
     token
   };
@@ -123,3 +123,50 @@ export const createSuperAdmin = async ({ email, password, name ,phone}) => {
   };
 };
 
+
+
+export const employeeLoginService = async (email, password) => {
+  try {
+    // 1️⃣ Check if employee exists
+    const employee = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!employee) {
+      const error = new Error("Invalid email or password");
+      error.status = 401;
+      throw error;
+    }
+
+    // 2️⃣ Validate password
+    const isMatch = await bcrypt.compare(password, employee.password);
+    if (!isMatch) {
+      const error = new Error("Invalid email or password");
+      error.status = 401;
+      throw error;
+    }
+
+    // 3️⃣ Generate JWT token
+    const token = jwt.sign(
+      { id: employee.id, role: employee.role }, // payload
+      JWT_SECRET,
+      { expiresIn: "1d" } // token expiry
+    );
+
+    // 4️⃣ Return user info + token
+    return {
+      message: "Login successful",
+      token,
+      user: {
+        id: employee.id,
+        name: employee.name,
+        email: employee.email,
+        role: employee.role,
+      },
+    };
+  } catch (err) {
+    const customError = new Error(err.message || "Failed to login");
+    customError.status = err.status || 500;
+    throw customError;
+  }
+};

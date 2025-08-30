@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 
 import { parseExcelFile } from './user.utility.js';
 import { CreateUserSchema } from './user.schema.js';
+import { parsePrismaNotFoundError } from '../../utils/prismaErrorParser.js';
 const prisma = new PrismaClient();
 
 
@@ -10,7 +11,25 @@ const SALT_ROUNDS = 10;
 
 const createEmployee = async (data, companyId) => {
   try {
-    const { userId, departmentId, alternate_mobile_number, dateRange, roleId, additionalInfo, ...userDetails } = data;
+    const { userId, departmentId, alternate_mobile_number, roleId, additionalInfo, specialNeed, specialNeedStart, specialNeedEnd, ...userDetails } = data;
+
+    // Validate special need fields
+    if (specialNeed === null || specialNeed === 'NONE' || !specialNeed) {
+      // If specialNeed is null, 'NONE', or not provided, ignore start/end dates
+      userDetails.specialNeed = null;
+      userDetails.specialNeedStart = null;
+      userDetails.specialNeedEnd = null;
+    } else if (specialNeed && (!specialNeedStart || !specialNeedEnd)) {
+      // If specialNeed is provided but dates are missing
+      const err = new Error("specialNeedStart and specialNeedEnd are required when specialNeed is provided");
+      err.status = 400;
+      throw err;
+    } else {
+      // If specialNeed is provided with dates, process them
+      userDetails.specialNeed = specialNeed;
+      userDetails.specialNeedStart = specialNeedStart ? new Date(specialNeedStart) : null;
+      userDetails.specialNeedEnd = specialNeedEnd ? new Date(specialNeedEnd) : null;
+    }
 
     const password = await bcrypt.hash(userId, SALT_ROUNDS);
 
@@ -20,9 +39,6 @@ const createEmployee = async (data, companyId) => {
       alternative_phone: alternate_mobile_number,
       password,
       type: 'EMPLOYEE',
-      specialNeed: data?.specialNeed || null,
-      specialNeedStart: dateRange?.startDate ? new Date(dateRange?.startDate) : null,
-      specialNeedEnd: dateRange?.endDate ? new Date(dateRange?.endDate) : null,
       additionalInfo,
       ...(companyId && { company: { connect: { id: companyId } } }),
       ...(departmentId && { department: { connect: { id: departmentId } } }),
@@ -31,19 +47,20 @@ const createEmployee = async (data, companyId) => {
 
     return await prisma.user.create({ data: employeeData });
   } catch (error) {
-    // console.error("Error creating employee:", error);
-
+    
     if (error.code === "P2002") {
       const field = error.meta?.target?.join(", ") || "field";
       const err = new Error(`Duplicate entry on ${field}`);
       err.status = 409;
       throw err;
     }
-
     if (error.code === "P2025") {
-      const err = new Error("Invalid department ID. Department not found.");
-      err.status = 400;
-      throw err;
+      throw parsePrismaNotFoundError(error);
+    }
+
+    // If it's already a custom error with status, rethrow it
+    if (error.status) {
+      throw error;
     }
 
     const err = new Error("Failed to create employee");
@@ -51,7 +68,6 @@ const createEmployee = async (data, companyId) => {
     throw err;
   }
 };
-
 
 
 
@@ -134,10 +150,10 @@ export const updateEmployee = async (id, data) => {
       include: { role: true, company: true }
     });
   } catch (error) {
-    // Handle Prisma specific errors
-   
+    if (error.message.includes("special_need_dates_check")) {
+      throw { status:409 ,message:"Special need requires valid start and end dates."};
+    }
       if (error.code === "P2002") {
-        // Unique constraint violation (like email already exists)
         throw {
           status: 400,
           message: `Duplicate field: ${error.meta.target.join(", ")} already exists`
@@ -313,7 +329,7 @@ const createDepartments = async ({ name, description, companyId }) => {
       data: {
         name,
         description,
-        Company: { connect: { id: companyId } }, // ensure `Company` matches schema
+        company: { connect: { id: companyId } }, // ensure `Company` matches schema
       },
     });
   } catch (err) {
@@ -330,14 +346,19 @@ const createDepartments = async ({ name, description, companyId }) => {
   }
 };
 
- const getCompanyDepartments= async (companyId) => {
+const getCompanyDepartments = async (companyId) => {
   try {
     const departments = await prisma.department.findMany({
       where: { companyId },
       include: {
         _count: {
           select: {
-            users: true,
+            users: true, // Total users
+            users: {
+              where: {
+                isActive: true
+              }
+            },
           },
         },
       },
@@ -348,7 +369,9 @@ const createDepartments = async ({ name, description, companyId }) => {
       name: dept.name,
       companyId: dept.companyId,
       description: dept.description,
-      users: dept._count.users, // 👈 Rename _count.users to users
+      totalUsers: dept._count.users, // Total count
+      activeUsers: dept._count.users, // Active count (this might need adjustment based on Prisma's count structure)
+      inactiveUsers: dept._count.users - dept._count.users, // Calculate inactive
     }));
   } catch (err) {
     console.error('Error fetching company teams:', err);

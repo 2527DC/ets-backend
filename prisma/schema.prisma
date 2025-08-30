@@ -30,8 +30,8 @@ model User {
   name              String
   gender            Gender?
   specialNeed       SpecialNeeds?
-  specialNeedStart  DateTime? // e.g., pregnancy start date
-  specialNeedEnd    DateTime? // e.g., expected delivery date or support period end
+  specialNeedStart  DateTime? 
+  specialNeedEnd    DateTime?
   email             String        @unique
   password          String
   phone             String        @unique

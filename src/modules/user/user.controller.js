@@ -115,7 +115,7 @@ export const uploadEmployees = async (req, res) => {
 
 export const createDepartments = async (req, res) => {
   try {
-    console.log("create team invoked", req.body);
+    console.log("create team invoked");
 
     const { name, description } = req.body;
     const { companyId } = req.user; // comes from auth
@@ -149,17 +149,31 @@ export const createDepartments = async (req, res) => {
 };
 
 
-export  const getCompanyDepartments = async (req, res) => {
+export const getCompanyDepartments = async (req, res) => {
   try {
     const { companyId } = req.user;
-    const teams = await userService.getCompanyDepartments(companyId);
-    if (!teams || teams.length === 0) {
-      return res.status(404).json({ message: 'No teams found in company ' , departments: []});  
+    const departments = await userService.getCompanyDepartments(companyId);
+    
+    if (!departments || departments.length === 0) {
+      return res.status(200).json({
+        success: true,
+        departments: [],
+        message: 'No departments found in company'
+      });  
     }
-    return res.json(teams);
+    
+    return res.json({
+      success:true,
+      departments: departments,
+      message: 'Departments retrieved successfully'
+    });
   } catch (err) {
-    console.error('Get company teams error:', err);
-    return res.status(500).json({ message: 'Failed to get company teams' });
+    console.error('Get company departments error:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to get company departments',
+      error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+    });
   }
 }
 
@@ -221,7 +235,7 @@ export const getEmployeesByDepartments = async (req, res) => {
     console.log("Employee by team invoked");
 
     const teamId = parseInt(req.params.id, 10); // from URL param
-    const { isActive } = req.query; // from query param
+    const { isActive} = req.query; // from query param
 
     // Convert isActive to boolean if provided
     const activeFilter = isActive !== undefined ? isActive === "true" : undefined;
