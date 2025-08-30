@@ -11,7 +11,7 @@ import moduleRoutes from "./src/modules/modules/ module.routes.js";
 import userRoutes from "./src/modules/user/user.routes.js";
 import authRoute from "./src/modules/auth/auth.routes.js";
 import rolePermissionRoutes from "./src/modules/Permission_and_Roles/rolePermission.routes.js";
-import cutOffWindowsRoutes from "./src/modules/cutOffWindow/cutoffWindow.Routes.js";
+import cutOffWindowsRoutes from "./src/modules/cutOffWindow/cutoffWindow.routes.js";
 import vendorRoutes from "./src/modules/vendor/vendor.routes.js";
 import vehicleRoutes from "./src/modules/vehicle/vehicle.routes.js";
 import { db } from "./src/utils/firebase.js";
