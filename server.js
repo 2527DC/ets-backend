@@ -12,6 +12,7 @@ import userRoutes from "./src/modules/user/user.routes.js";
 import authRoute from "./src/modules/auth/auth.routes.js";
 import rolePermissionRoutes from "./src/modules/Permission_and_Roles/rolePermission.routes.js";
 import cutOffWindowsRoutes from "./src/modules/cutOffWindow/cutoffWindow.routes.js";
+ import auditRoutes from "./src/modules/audit/audit.route.js";
 import vendorRoutes from "./src/modules/vendor/vendor.routes.js";
 import vehicleRoutes from "./src/modules/vehicle/vehicle.routes.js";
 import { db } from "./src/utils/firebase.js";
@@ -90,6 +91,7 @@ app.post("/firebase-node", async (req, res) => {
 
 // ✅ All authenticated API routes
 app.use("/api/roles", roleRoutes);
+app.use("/api/audit", auditRoutes);
 app.use("/api/shifts", shiftsRoutes);
 app.use("/api/role-permissions", rolePermissionRoutes);
 app.use("/api/drivers", driverRoutes);

@@ -379,35 +379,53 @@ const getCompanyDepartments = async (companyId) => {
   }
 };
 
-const updateDepartments = async (id, data) => {
+const updateDepartments = async (id, data, userEmail) => {
   try {
-    return await prisma.department.update({
-      where: { id },
-      data,
+    console.log("This is the email:", userEmail);
+
+    // Wrap in a transaction to ensure SET LOCAL is visible to the trigger
+    const result = await prisma.$transaction(async (tx) => {
+      // Set current user for the trigger
+      await tx.$executeRawUnsafe(`SET LOCAL "app.current_user" = '${userEmail}'`);
+
+      // Perform the update
+      return await tx.department.update({
+        where: { id },
+        data,
+      });
     });
+
+    return result;
   } catch (err) {
-    console.error('Error updating team:', err);
-    throw new Error('Failed to update team');
+    console.error('Error updating department:', err);
+    throw new Error('Failed to update department');
   }
-}
+};
 
 
 
-const deleteDepartments = async (id) => {
+
+const deleteDepartments = async (id, userEmail) => {
   try {
-    return await prisma.department.delete({
-      where: { id },
+    return await prisma.$transaction(async (tx) => {
+      // Set current user for the trigger
+      await tx.$executeRawUnsafe(`SET LOCAL "app.current_user" = '${userEmail}'`);
+
+      // Perform delete
+      return await tx.department.delete({
+        where: { id },
+      });
     });
   } catch (err) {
-    // Check if the error is Prisma P2025 (record not found)
     if (err.code === 'P2025') {
       console.warn(`Department with id ${id} not found.`);
-      return null; // or throw a custom error if you prefer
+      return null;
     }
     console.error('Error deleting department:', err);
     throw new Error('Failed to delete department');
   }
 };
+
 
 
 const getEmployeesByDepartments = async (teamId, isActive) => {

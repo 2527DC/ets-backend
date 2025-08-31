@@ -72,6 +72,7 @@ const login = async (email, password) => {
 
   const tokenPayload = {
     id: user.id,
+    email: user.email,
     type: user.type,
     ...(user.companyId && { companyId: user.companyId }),
     // ...(user.role?.name && { role: user.role.name }),
@@ -85,14 +86,12 @@ const login = async (email, password) => {
       name: user.name,
       email: user.email,
       type: user.type.toLowerCase(),
-      companyName: user.company.name ||null ,
-      role: user.role.name },
+      companyName: user.company?.name ||null ,
+      role: user.role?.name },
     allowedModules,
     token
   };
 };
-
-export default { login };
 
 
 
@@ -170,3 +169,6 @@ export const employeeLoginService = async (email, password) => {
     throw customError;
   }
 };
+
+
+export default { login };

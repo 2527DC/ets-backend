@@ -181,12 +181,13 @@ export const updateDepartments = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10); // Convert string to number
     const { name, description } = req.body;
-
+   console.log(" this the user making action " , req.user);
+   
     if (!name || !description) {
       return res.status(400).json({ message: 'Name and description are required' });
     }
-
-    const updatedTeam = await userService.updateTeam(id, { name, description });
+    const userEmail =req.user.email
+    const updatedTeam = await userService.updateDepartments(id, { name, description } ,userEmail);
 
     return res.json({
       message: 'Team updated successfully',
@@ -202,8 +203,9 @@ export const updateDepartments = async (req, res) => {
 
 export const deleteDepartments = async (req, res) => {
   try {
+    const userEmail =req.user.email
     const id = parseInt(req.params.id, 10); // Convert string to number
-    const deletedDepartment = await userService.deleteDepartments(id);
+    const deletedDepartment = await userService.deleteDepartments(id,userEmail);
 
     if (!deletedDepartment) {
       return res.status(404).json({
@@ -232,10 +234,9 @@ export const deleteDepartments = async (req, res) => {
 
 export const getEmployeesByDepartments = async (req, res) => {
   try {
-    console.log("Employee by team invoked");
 
-    const teamId = parseInt(req.params.id, 10); // from URL param
-    const { isActive} = req.query; // from query param
+    const teamId = parseInt(req.params.id, 10);
+    const { isActive} = req.query; 
 
     // Convert isActive to boolean if provided
     const activeFilter = isActive !== undefined ? isActive === "true" : undefined;
@@ -246,6 +247,7 @@ export const getEmployeesByDepartments = async (req, res) => {
       message: employees.length > 0 
         ? 'Employees fetched successfully' 
         : 'No employees found for this team',
+        departmentId: teamId,
       employees,
     });
   } catch (err) {

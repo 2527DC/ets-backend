@@ -8,61 +8,35 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserType {
-  ADMIN
-  SUPER_ADMIN
-  EMPLOYEE
-}
-
-enum Gender {
-  MALE
-  FEMALE
-  OTHERS
-}
-
-enum SpecialNeeds {
-  PREGNENT
-}
-
 model User {
   id                Int           @id @default(autoincrement())
-  userId            String?       @unique
   name              String
-  gender            Gender?
-  specialNeed       SpecialNeeds?
-  specialNeedStart  DateTime? 
-  specialNeedEnd    DateTime?
   email             String        @unique
   password          String
-  phone             String        @unique
-  alternative_phone String?
   type              UserType
   isActive          Boolean       @default(true)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   companyId         Int?
   roleId            Int?
-  company           Company?      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  role              Role?         @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  departmentId      Int?
-  department        Department?   @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  landmark          String?
   address           String?
+  gender            Gender?
+  specialNeed       SpecialNeeds?
+  specialNeedEnd    DateTime?
+  specialNeedStart  DateTime?
+  userId            String?       @unique
+  additionalInfo    Json?
+  departmentId      Int?
+  phone             String        @unique
   lat               String?
   lng               String?
-  additionalInfo    Json?
+  alternative_phone String?
+  landmark          String?
   bookings          Booking[]
+  company           Company?      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  department        Department?   @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  role              Role?         @relation(fields: [roleId], references: [id], onDelete: Cascade)
   weekOff           UserWeekOff?
-}
-
-enum DayOfWeek {
-  MONDAY
-  TUESDAY
-  WEDNESDAY
-  THURSDAY
-  FRIDAY
-  SATURDAY
-  SUNDAY
 }
 
 model UserWeekOff {
@@ -71,16 +45,15 @@ model UserWeekOff {
   daysOff   DayOfWeek[]
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Department {
   id          Int     @id @default(autoincrement())
   name        String
+  description String
   companyId   Int
   company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  description String
   users       User[]
 }
 
@@ -111,23 +84,22 @@ model RolePermission {
 }
 
 model Company {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String?  @unique
-  phone     String?  @unique
-  address   String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id              Int             @id @default(autoincrement())
+  name            String
+  email           String?         @unique
+  phone           String?         @unique
+  address         String?
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  bookings        Booking[]
+  CutoffWindow    CutoffWindow[]
   department      Department[]
   drivers         Driver[]
   roles           Role[]
-  users           User[]
   shifts          Shift[]
   shiftCategories ShiftCategory[]
-  bookings        Booking[] // 👈 new relation
-  CutoffWindow    CutoffWindow[]
+  users           User[]
 }
 
 model Role {
@@ -145,10 +117,10 @@ model Vendor {
   id       Int       @id @default(autoincrement())
   name     String
   driverId Int?
-  driver   Driver?   @relation(fields: [driverId], references: [id], onDelete: SetNull)
-  vehicles Vehicle[]
-  routes   Route[] // changed from singular Route? to Route[]
+  routes   Route?
   Trip     Trip[]
+  vehicles Vehicle[]
+  driver   Driver?   @relation(fields: [driverId], references: [id])
 }
 
 model VehicleType {
@@ -162,17 +134,13 @@ model Vehicle {
   vehicleId     String            @unique
   vendorId      Int
   vehicleTypeId Int
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  driver        Driver?           @relation("VehicleDriver")
+  Route         Route?
+  vehicleType   VehicleType       @relation(fields: [vehicleTypeId], references: [id])
   vendor        Vendor            @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  vehicleType   VehicleType       @relation(fields: [vehicleTypeId], references: [id], onDelete: Restrict)
   documents     VehicleDocument[]
-
-  // One-to-one with Driver
-  driver Driver? @relation("VehicleDriver")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  Route Route?
 }
 
 model VehicleDocument {
@@ -182,34 +150,180 @@ model VehicleDocument {
   filePath     String
   status       DocumentStatus @default(PENDING)
   expiryDate   DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  vehicle      Vehicle        @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
-  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([vehicleId, documentType]) // Ensure one document per type per vehicle
+  @@unique([vehicleId, documentType])
 }
 
 model Driver {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String?  @unique
-  phone     String?  @unique
-  licenseNo String
-  vehicleId Int?     @unique
-  vehicle   Vehicle? @relation("VehicleDriver", fields: [vehicleId], references: [id], onDelete: SetNull)
-  driverId  String   @unique
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  companyId Int?
-  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
+  id              Int               @id @default(autoincrement())
+  name            String
+  email           String?           @unique
+  phone           String?           @unique
+  licenseNo       String
+  vehicleId       Int?              @unique
+  isActive        Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  companyId       Int?
+  driverId        String            @unique
+  company         Company?          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  vehicle         Vehicle?          @relation("VehicleDriver", fields: [vehicleId], references: [id])
   driverDocuments DriverDocumnets[]
   Trip            Trip[]
   vendors         Vendor[]
+}
+
+model DriverDocumnets {
+  id           Int            @id @default(autoincrement())
+  driverId     Int
+  documentType DocumentType
+  status       DocumentStatus @default(PENDING)
+  filepath     String
+  expiryDate   DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  driver       Driver         @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@unique([driverId, documentType])
+}
+
+model ShiftCategory {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  companyId   Int
+  shifts      Shift[]
+  company     Company  @relation(fields: [companyId], references: [id])
+}
+
+model Shift {
+  id              Int           @id @default(autoincrement())
+  shiftType       ShiftType
+  hour            Int
+  minute          Int
+  shiftCategoryId Int
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  companyId       Int
+  isActive        Boolean       @default(true)
+  bookings        Booking[]
+  Route           Route[]
+  company         Company       @relation(fields: [companyId], references: [id])
+  shiftCategory   ShiftCategory @relation(fields: [shiftCategoryId], references: [id])
+}
+
+model Booking {
+  id            Int            @id @default(autoincrement())
+  userId        Int
+  pickupAddress String
+  dropAddress   String
+  status        BookingStatus  @default(PENDING)
+  bookingType   BookingType
+  isAdhoc       Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  companyId     Int
+  scheduledTime DateTime
+  shiftId       Int?
+  company       Company        @relation(fields: [companyId], references: [id])
+  shift         Shift?         @relation(fields: [shiftId], references: [id])
+  user          User           @relation(fields: [userId], references: [id])
+  RouteBooking  RouteBooking[]
+}
+
+model Route {
+  id            Int            @id @default(autoincrement())
+  distance      Float          @default(0.0)
+  vendorId      Int?           @unique
+  vehicleId     Int?           @unique
+  shiftId       Int?
+  createdAt     DateTime       @default(now())
+  shift         Shift?         @relation(fields: [shiftId], references: [id])
+  vehicle       Vehicle?       @relation(fields: [vehicleId], references: [id])
+  vendor        Vendor?        @relation(fields: [vendorId], references: [id])
+  routeBookings RouteBooking[]
+  trips         Trip[]
+}
+
+model RouteBooking {
+  id        Int      @id @default(autoincrement())
+  routeId   Int
+  bookingId Int
+  createdAt DateTime @default(now())
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  route     Route    @relation(fields: [routeId], references: [id])
+
+  @@unique([routeId, bookingId])
+}
+
+model Trip {
+  id        Int        @id @default(autoincrement())
+  driverId  Int
+  vendorId  Int
+  routeId   Int
+  createdBy Int
+  createdAt DateTime   @default(now())
+  status    TripStatus
+  driver    Driver     @relation(fields: [driverId], references: [id])
+  route     Route      @relation(fields: [routeId], references: [id])
+  vendor    Vendor     @relation(fields: [vendorId], references: [id])
+}
+
+model CutoffWindow {
+  id          Int        @id @default(autoincrement())
+  companyId   Int
+  cutoffType  CutoffType
+  durationMin Int
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  company     Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, cutoffType], name: "unique_company_cutoff_type")
+}
+
+model AuditLog {
+  id         Int       @id @default(autoincrement())
+  table_name String    @map("table_name")
+  record_id  Int       @map("record_id")
+  action     String    @map("action") @db.VarChar(10)
+  old_data   Json?     @map("old_data")
+  new_data   Json?     @map("new_data")
+  changed_by String?   @map("changed_by")
+  changed_at DateTime? @default(now()) @map("changed_at") @db.Timestamp(6)
+
+  @@map("audit_log")
+}
+
+enum UserType {
+  ADMIN
+  SUPER_ADMIN
+  EMPLOYEE
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHERS
+}
+
+enum SpecialNeeds {
+  PREGNENT
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
 }
 
 enum DocumentStatus {
@@ -237,52 +351,9 @@ enum DocumentType {
   TAX_RECEIPT
 }
 
-model DriverDocumnets {
-  id           Int            @id @default(autoincrement())
-  driverId     Int
-  documentType DocumentType
-  status       DocumentStatus @default(PENDING)
-  filepath     String
-  expiryDate   DateTime?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  driver       Driver         @relation(fields: driverId, references: id, onDelete: Cascade)
-
-  @@unique([driverId, documentType])
-}
-
 enum ShiftType {
   LOGIN
   LOGOUT
-}
-
-model ShiftCategory {
-  id          Int      @id @default(autoincrement())
-  name        String
-  description String?
-  shifts      Shift[]
-  company     Company  @relation(fields: [companyId], references: [id])
-  companyId   Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model Shift {
-  id              Int           @id @default(autoincrement())
-  shiftType       ShiftType
-  hour            Int
-  minute          Int
-  shiftCategory   ShiftCategory @relation(fields: [shiftCategoryId], references: [id])
-  shiftCategoryId Int
-  company         Company       @relation(fields: [companyId], references: [id])
-  companyId       Int
-  isActive        Boolean       @default(true)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  // 👇 new relation
-  bookings Booking[]
-  Route    Route[]
 }
 
 enum BookingType {
@@ -298,91 +369,14 @@ enum BookingStatus {
   CANCELLED
 }
 
-model Booking {
-  id            Int           @id @default(autoincrement())
-  userId        Int
-  companyId     Int // 👈 new foreign key to company
-  shiftId       Int? // optional link to shift
-  pickupAddress String
-  dropAddress   String
-  status        BookingStatus @default(PENDING)
-  bookingType   BookingType
-  isAdhoc       Boolean       @default(false)
-
-  user          User           @relation(fields: [userId], references: [id])
-  company       Company        @relation(fields: [companyId], references: [id]) // link to company
-  shift         Shift?         @relation(fields: [shiftId], references: [id])
-  scheduledTime DateTime
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  RouteBooking  RouteBooking[]
-}
-
-model Route {
-  id       Int   @id @default(autoincrement())
-  distance Float @default(0.0)
-
-  vendorId Int?    @unique
-  vendor   Vendor? @relation(fields: [vendorId], references: [id])
-
-  vehicleId Int?     @unique
-  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
-
-  shiftId Int?
-  shift   Shift? @relation(fields: [shiftId], references: [id])
-
-  createdAt DateTime @default(now())
-
-  routeBookings RouteBooking[]
-  trips         Trip[]
-}
-
-model RouteBooking {
-  id        Int      @id @default(autoincrement())
-  routeId   Int
-  bookingId Int
-  createdAt DateTime @default(now())
-  booking   Booking  @relation(fields: [bookingId], references: [id])
-  route     Route    @relation(fields: [routeId], references: [id])
-
-  @@unique([routeId, bookingId])
-}
-
 enum TripStatus {
   PENDING
   IN_PROGRESS
   COMPLETED
 }
 
-model Trip {
-  id        Int        @id @default(autoincrement())
-  driverId  Int
-  vendorId  Int
-  routeId   Int
-  createdBy Int
-  createdAt DateTime   @default(now())
-  status    TripStatus
-  driver    Driver     @relation(fields: [driverId], references: [id])
-  route     Route      @relation(fields: [routeId], references: [id])
-  vendor    Vendor     @relation(fields: [vendorId], references: [id])
-}
-
 enum CutoffType {
   BOOKING_CREATION
   BOOKING_CANCELLATION
   BOOKING_RESCHEDULE
-}
-
-model CutoffWindow {
-  id          Int        @id @default(autoincrement())
-  companyId   Int
-  cutoffType  CutoffType
-  durationMin Int // cutoff time in minutes
-  isActive    Boolean    @default(true)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@unique([companyId, cutoffType], name: "unique_company_cutoff_type")
 }

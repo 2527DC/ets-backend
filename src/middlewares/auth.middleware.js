@@ -13,7 +13,7 @@ export const authenticate = async (req, res, next) => {
 
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET);
-    const { id, companyId, roleId, role, type } = decoded;
+    const { id, companyId, roleId, role, type , email } = decoded;
 
 
 
@@ -57,7 +57,7 @@ export const authenticate = async (req, res, next) => {
     }
 
     // 🪪 Attach to req.user
-    req.user = { id, type, role, roleId, companyId, permissions };
+    req.user = { id, type, role, roleId,email, companyId, permissions };
 
     return next();
 
