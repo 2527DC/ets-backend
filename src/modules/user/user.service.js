@@ -131,8 +131,6 @@ const getEmployeeById = async (id) => {
           name: true
         }
       }
-      // company is excluded by not adding it
-      // password is excluded by not selecting it
     }
   });
 };
@@ -381,9 +379,6 @@ const getCompanyDepartments = async (companyId) => {
 
 const updateDepartments = async (id, data, userEmail) => {
   try {
-    console.log("This is the email:", userEmail);
-
-    // Wrap in a transaction to ensure SET LOCAL is visible to the trigger
     const result = await prisma.$transaction(async (tx) => {
       // Set current user for the trigger
       await tx.$executeRawUnsafe(`SET LOCAL "app.current_user" = '${userEmail}'`);
@@ -397,11 +392,18 @@ const updateDepartments = async (id, data, userEmail) => {
 
     return result;
   } catch (err) {
+    if (err.code === 'P2025') {
+      const notFoundError = new Error(`Department  not found`);
+      notFoundError.status = 404; // attach status code
+      throw notFoundError;
+    }
+
     console.error('Error updating department:', err);
-    throw new Error('Failed to update department');
+    const serverError = new Error('Failed to update department');
+    serverError.status = 500;
+    throw serverError;
   }
 };
-
 
 
 
@@ -430,11 +432,12 @@ const deleteDepartments = async (id, userEmail) => {
 
 const getEmployeesByDepartments = async (teamId, isActive) => {
   try {
-    return await prisma.user.findMany({
+    // Fetch employees + their direct weekoff
+    const employees = await prisma.user.findMany({
       where: {
         departmentId: teamId,
         type: 'EMPLOYEE',
-        ...(isActive !== undefined && { isActive: isActive }), // Only add if provided
+        ...(isActive !== undefined && { isActive: isActive }),
       },
       select: {
         id: true,
@@ -443,12 +446,7 @@ const getEmployeesByDepartments = async (teamId, isActive) => {
         email: true,
         phone: true,
         gender: true,
-        role: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        role: { select: { id: true, name: true } },
         address: true,
         companyId: true,
         departmentId: true,
@@ -462,8 +460,62 @@ const getEmployeesByDepartments = async (teamId, isActive) => {
         type: true,
         landmark: true,
         alternative_phone: true,
+
+        // ✅ Direct relation to WeekOff
+        weekOff: {
+          select: {
+            id: true,
+            daysOfWeek: true,
+            userId: true,
+            departmentId: true,
+          },
+        },
       },
     });
+
+    // Fetch department-level weekoff once
+    const departmentWeekOff = await prisma.weekOff.findUnique({
+      where: { departmentId: teamId },
+      select: { id: true, daysOfWeek: true, departmentId: true },
+    });
+
+    // Fetch company-level weekoff once (assume all users belong to same company)
+    const companyId = employees[0]?.companyId;
+    let companyWeekOff = null;
+    if (companyId) {
+      companyWeekOff = await  prisma.weekOff.findFirst({
+        where: { companyId: 1 },
+        select: {
+          id: true,
+          daysOfWeek: true,
+          departmentId: true,
+        },
+      });
+      
+    }
+
+    // Apply fallback logic for each employee
+    const employeesWithWeekOff = employees.map(emp => {
+      let finalWeekOff = null;
+
+      if (emp.weekOff && emp.weekOff.daysOfWeek?.length > 0) {
+        // ✅ User-level weekoff
+        finalWeekOff = emp.weekOff.daysOfWeek;
+      } else if (departmentWeekOff && departmentWeekOff.daysOfWeek?.length > 0) {
+        // ✅ Department-level weekoff
+        finalWeekOff = departmentWeekOff.daysOfWeek;
+      } else if (companyWeekOff && companyWeekOff.daysOfWeek?.length > 0) {
+        // ✅ Company-level weekoff
+        finalWeekOff = companyWeekOff.daysOfWeek;
+      }
+      const { weekOff, ...rest } = emp;
+      return {
+        ...rest,
+        finalWeekOff, // 👈 This is the resolved weekoff
+      };
+    });
+
+    return employeesWithWeekOff;
   } catch (err) {
     console.error('Error fetching employees by team:', err);
     throw new Error('Failed to fetch employees by team');

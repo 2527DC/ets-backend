@@ -1,4 +1,4 @@
-import { cutoffWindowService } from "./cutoffWindow.service.js";
+import {  cutoffWindowService, WeekOffService } from "./cutoffWindow.service.js";
 
 export const cutoffWindowController = {
   // Create cutoff window
@@ -223,3 +223,69 @@ export const cutoffWindowController = {
     }
   }
 };
+
+const weekOffService = new WeekOffService();
+// controllers/weekOff.controller.js
+export class WeekOffController {
+  // ✅ Create weekoff
+  async create(req, res) {
+    try {
+      const { companyId, departmentId, userId, daysOfWeek } = req.body;
+
+      // Validate mandatory fields
+      if (!daysOfWeek || !Array.isArray(daysOfWeek) || daysOfWeek.length === 0) {
+        return res.status(400).json({ error: "daysOfWeek is required" });
+      }
+
+      const weekOff = await weekOffService.createWeekOff({
+        companyId,
+        departmentId,
+        userId,
+        daysOfWeek,
+      });
+
+      res.status(201).json(weekOff);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  // Upsert (create or update)
+  async upsert(req, res) {
+    try {
+      const { companyId, departmentId, userId, daysOfWeek } = req.body;
+      const weekOff = await weekOffService.upsertWeekOff({
+        companyId,
+        departmentId,
+        userId,
+        daysOfWeek,
+      });
+      res.json(weekOff);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  // Get weekoff for user with fallback
+  async getForUser(req, res) {
+    try {
+      const userId = Number(req.params.userId);
+      const weekOff = await weekOffService.getUserWeekOff(userId);
+      if (!weekOff) return res.status(404).json({ message: "No weekoff found" });
+      res.json(weekOff);
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  // Delete weekoff
+  async delete(req, res) {
+    try {
+      const id = Number(req.params.id);
+      await weekOffService.deleteWeekOff(id);
+      res.json({ message: "WeekOff deleted successfully" });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+}

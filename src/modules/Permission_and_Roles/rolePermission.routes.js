@@ -2,10 +2,10 @@ import express from 'express';
 import {
   createRolePermission,
   getAllRolePermissions,
-  updateRolePermission,
   deleteRolePermission,
   getRolePermissionsByRoleId,
-  getUserPermissions
+  getUserPermissions,
+  updateRolePermissionsController
 } from './rolePermission.controller.js';
 import { authenticate } from '../../middlewares/auth.middleware.js';
 
@@ -19,8 +19,9 @@ router.post('/', createRolePermission);
 // GET /api/role-permissions
 router.get('/', getAllRolePermissions);
 
-// PUT /api/role-permissions/:id
-router.put('/:id', updateRolePermission);
+// Single or bulk handled in the same endpoint
+router.put("/update/:roleId", updateRolePermissionsController);
+
 // DELETE /api/role-permissions/:id
 router.delete('/:id', deleteRolePermission);
 router.get('/permissions', getUserPermissions); // get role permission by token 

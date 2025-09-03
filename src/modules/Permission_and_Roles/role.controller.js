@@ -4,7 +4,7 @@ import * as roleService from './role.service.js';
 export const createRole = async (req, res) => {
   try {
     const { name } = req.body;
-    const companyId = req.companyId;
+    const {companyId} = req.user;
     const role = await roleService.createRole({ name, companyId });
     res.status(201).json(role);
   } catch (error) {
@@ -16,7 +16,9 @@ export const createRole = async (req, res) => {
 export const getAllRoles = async (req, res) => {
   
   try {
-    const roles = await roleService.getAllRoles();
+
+    const {companyId} = req.user;
+    const roles = await roleService.getAllRoles(companyId);
     res.json(roles);
   } catch (error) {
     console.error('Error fetching roles:', error);

@@ -13,7 +13,7 @@ export const cutoffWindowService = {
       }
     });
   },
-
+  
   // Get all cutoff windows for a company
   getCutoffWindowsByCompany: async (companyId) => {
     return await prisma.cutoffWindow.findMany({
@@ -106,3 +106,71 @@ export const cutoffWindowService = {
     });
   }
 };
+
+
+
+// services/weekOff.service.js
+
+export class WeekOffService {
+  async createWeekOff({ companyId, departmentId, userId, daysOfWeek }) {
+    return prisma.weekOff.create({
+      data: {
+        companyId,
+        departmentId,
+        userId,
+        daysOfWeek,
+      },
+    });
+  }
+
+  async upsertWeekOff({ companyId, departmentId, userId, daysOfWeek }) {
+    return prisma.weekOff.upsert({
+      where: {
+        userId: userId || undefined,
+        departmentId: departmentId || undefined,
+      },
+      update: { daysOfWeek },
+      create: {
+        companyId,
+        departmentId,
+        userId,
+        daysOfWeek,
+      },
+    });
+  }
+
+  async getUserWeekOff(userId) {
+    // 1. Check user-specific weekoff
+    let weekOff = await prisma.weekOff.findUnique({
+      where: { userId },
+    });
+
+    if (weekOff) return weekOff;
+
+    // 2. Else check department/team weekoff
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { department: true },
+    });
+
+    if (user?.departmentId) {
+      weekOff = await prisma.weekOff.findUnique({
+        where: { departmentId: user.departmentId },
+      });
+    }
+
+    // 3. Else check company level weekoff
+    if (!weekOff && user?.companyId) {
+      weekOff = await prisma.weekOff.findFirst({
+        where: { companyId: user.companyId },
+      });
+    }
+
+    return weekOff;
+  }
+
+  async deleteWeekOff(id) {
+    return prisma.weekOff.delete({ where: { id } });
+  }
+}
+

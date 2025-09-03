@@ -179,24 +179,29 @@ export const getCompanyDepartments = async (req, res) => {
 
 export const updateDepartments = async (req, res) => {
   try {
-    const id = parseInt(req.params.id, 10); // Convert string to number
+    const id = parseInt(req.params.id, 10);
     const { name, description } = req.body;
-   console.log(" this the user making action " , req.user);
-   
+
     if (!name || !description) {
-      return res.status(400).json({ message: 'Name and description are required' });
+      return res.status(400).json({
+        success: false,
+        message: 'Name and description are required',
+      });
     }
-    const userEmail =req.user.email
-    const updatedTeam = await userService.updateDepartments(id, { name, description } ,userEmail);
+
+    const userEmail = req.user?.email;
+    const updatedTeam = await userService.updateDepartments(id, { name, description }, userEmail);
 
     return res.json({
+      success: true,
       message: 'Team updated successfully',
       team: updatedTeam,
     });
   } catch (err) {
     console.error('Update team error:', err);
     return res.status(err.status || 500).json({
-      message: err.message || 'Failed to update team',
+      success: false,
+        message: err.message || 'Failed to update team',
     });
   }
 };

@@ -1,6 +1,5 @@
 import express from 'express';
-import { cutoffWindowController } from './cutoffWindow.controller.js';
-
+import { cutoffWindowController, WeekOffController } from './cutoffWindow.controller.js';
 const router = express.Router();
 
 // Create a new cutoff window
@@ -23,5 +22,13 @@ router.patch('/cutoff-windows/:id/toggle-status', cutoffWindowController.toggleC
 
 // Delete cutoff window
 router.delete('/cutoff-windows/:id', cutoffWindowController.deleteCutoffWindow);
+
+
+const controller = new WeekOffController();
+
+router.post("/create-weekoff", controller.create.bind(controller)); // ✅ create
+router.post("/upsert", controller.upsert.bind(controller));
+router.get("/user/:userId", controller.getForUser.bind(controller));
+router.delete("/:id", controller.delete.bind(controller));
 
 export default router;

@@ -35,24 +35,48 @@ export const createRolePermissionWithChildren = async ({ roleId, moduleId, canRe
 };
 
 export const getAllRolePermissions = () => prisma.rolePermission.findMany({ include: { module: true, role: true } });
-export const updateRolePermission = (id, data) => prisma.rolePermission.update({ where: { id }, data });
+
+
+export const updateRolePermissions = async (roleId, permissions) => {
+  const permsArray = Array.isArray(permissions) ? permissions : [permissions];
+
+  const updatedPermissions = await prisma.$transaction(
+    permsArray.map((perm) =>
+      prisma.rolePermission.upsert({
+        where: {
+          unique_role_module: {
+            roleId,
+            moduleId: perm.moduleId,
+          },
+        },
+        update: {
+          canRead: perm.canRead ?? undefined,
+          canWrite: perm.canWrite ?? undefined,
+          canDelete: perm.canDelete ?? undefined,
+        },
+        create: {
+          roleId,
+          moduleId: perm.moduleId,
+          canRead: perm.canRead ?? false,
+          canWrite: perm.canWrite ?? false,
+          canDelete: perm.canDelete ?? false,
+        },
+      })
+    )
+  );
+
+  // Map to a clean response structure
+  return updatedPermissions.map((perm) => ({
+    moduleId: perm.moduleId,
+    canRead: perm.canRead,
+    canWrite: perm.canWrite,
+    canDelete: perm.canDelete,
+  }));
+};
+
+
 export const deleteRolePermission = (id) => prisma.rolePermission.delete({ where: { id } });
 
-// export const getRolePermissionsByRoleId = async (roleId) => {
-//   const permissions = await prisma.rolePermission.findMany({
-//     where: { roleId },
-//     include: {
-//       module: true
-//     }
-//   });
-//   const allowedModules = permissions.map(p => ({
-//     key: p.module.key,
-//     canRead: p.canRead,
-//     canWrite: p.canWrite,
-//     canDelete: p.canDelete
-//   }));
-//   return { allowedModules };
-// };
 
 export const getRolePermissionsByRoleId = async (roleId) => {
   const permissions = await prisma.rolePermission.findMany({

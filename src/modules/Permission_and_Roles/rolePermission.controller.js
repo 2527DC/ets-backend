@@ -57,19 +57,38 @@ export const getRolePermissionsByRoleId = async (req, res) => {
   };
   
 
-// Update RolePermission by ID
-export const updateRolePermission = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const data = req.body;
-
-    const updatedPermission = await rolePermissionService.updateRolePermission(parseInt(id, 10), data);
-    return res.json(updatedPermission);
-  } catch (err) {
-    console.error('Update RolePermission error:', err);
-    return res.status(500).json({ message: err.message || 'Something went wrong' });
-  }
-};
+  export const updateRolePermissionsController = async (req, res) => {
+    try {
+      const { roleId } = req.params; 
+      const { permissions } = req.body;
+  
+      if (!permissions) {
+        return res.status(400).json({ 
+          success: false,
+          message: "permissions is required" 
+        });
+      }
+  
+      const updated = await rolePermissionService.updateRolePermissions(
+        parseInt(roleId, 10),
+        permissions
+      );
+  
+      return res.json({
+        success: true,
+        message: "Role permissions updated successfully",
+        roleId: parseInt(roleId, 10),
+        permissions: updated
+      });
+    } catch (err) {
+      console.error("Update RolePermissions error:", err);
+      return res.status(500).json({ 
+        success: false,
+        message: err.message || "Something went wrong" 
+      });
+    }
+  };
+  
 
 // Delete RolePermission by ID
 export const deleteRolePermission = async (req, res) => {

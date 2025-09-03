@@ -1,6 +1,10 @@
+// =============================================================================
+// PRISMA CONFIGURATION
+// =============================================================================
+
 generator client {
   provider      = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"] // Multi-platform support
 }
 
 datasource db {
@@ -8,314 +12,430 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// =============================================================================
+// CORE BUSINESS ENTITIES
+// =============================================================================
+
+// Company - Root entity for multi-tenant architecture
+model Company {
+  id              Int             @id @default(autoincrement())
+  name            String          // Company name
+  email           String?         @unique // Company contact email
+  phone           String?         @unique // Company contact phone
+  address         String?         // Physical address
+  isActive        Boolean         @default(true) // Soft delete flag
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  // Relations - All company-owned entities
+  bookings        Booking[]       // Employee bookings
+  CutoffWindow    CutoffWindow[]  // Booking cutoff rules
+  department      Department[]    // Organizational departments
+  drivers         Driver[]        // Company drivers
+  roles           Role[]          // User roles within company
+  shifts          Shift[]         // Work shifts
+  shiftCategories ShiftCategory[] // Shift categorization
+  users           User[]          // Company employees
+
+  vendors         Vendor[]        // Transport vendors
+  weekOff  WeekOff[] // 1-to-1 relation
+}
+
+// Department - Organizational units within company
+model Department {
+  id          Int     @id @default(autoincrement())
+  name        String  // Department name (e.g., "IT", "HR", "Finance")
+  description String  // Department description/purpose
+  companyId   Int     // Foreign key to company
+  
+  // Relations
+  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  users       User[]  // Department employees
+  weekOff  WeekOff? // 1-to-1 relation
+}
+
+// User - Core entity for employees/admins
 model User {
   id                Int           @id @default(autoincrement())
-  name              String
-  email             String        @unique
-  password          String
-  type              UserType
-  isActive          Boolean       @default(true)
+  name              String        // Full name
+  email             String        @unique // Login email
+  password          String        // Hashed password
+  type              UserType      // ADMIN, SUPER_ADMIN, EMPLOYEE
+  isActive          Boolean       @default(true) // Account status
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
-  companyId         Int?
-  roleId            Int?
-  address           String?
-  gender            Gender?
-  specialNeed       SpecialNeeds?
-  specialNeedEnd    DateTime?
-  specialNeedStart  DateTime?
-  userId            String?       @unique
-  additionalInfo    Json?
-  departmentId      Int?
-  phone             String        @unique
-  lat               String?
-  lng               String?
-  alternative_phone String?
-  landmark          String?
-  bookings          Booking[]
+  
+  // Organizational relationships
+  companyId         Int?          // Company affiliation
+  roleId            Int?          // Role assignment
+  departmentId      Int?          // Department assignment
+  
+  // Personal information
+  address           String?       // Home address
+  gender            Gender?       // MALE, FEMALE, OTHERS
+  phone             String        @unique // Primary phone
+  alternative_phone String?       // Secondary phone
+  lat               String?       // Address latitude for location services
+  lng               String?       // Address longitude for location services
+  landmark          String?       // Address landmark reference
+  
+  // Special needs management (for transport accommodations)
+  specialNeed       SpecialNeeds? // Type of special need
+  specialNeedEnd    DateTime?     // End date for special accommodation
+  specialNeedStart  DateTime?     // Start date for special accommodation
+  
+  // System fields
+  userId            String?       @unique // Alternative user identifier
+  additionalInfo    Json?         // Flexible field for extra data
+  
+  // Relations
+  bookings          Booking[]     // User's transport bookings
   company           Company?      @relation(fields: [companyId], references: [id], onDelete: Cascade)
   department        Department?   @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   role              Role?         @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  weekOff           UserWeekOff?
+  createdTrips      Trip[]        @relation("TripCreatedBy") // Trips created by this user
+  weekOff  WeekOff? // 1-to-1 relation
 }
 
-model UserWeekOff {
-  id        Int         @id @default(autoincrement())
-  userId    Int         @unique
-  daysOff   DayOfWeek[]
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
+// =============================================================================
+// AUTHORIZATION & PERMISSION SYSTEM
+// =============================================================================
 
-model Department {
-  id          Int     @id @default(autoincrement())
-  name        String
-  description String
-  companyId   Int
-  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  users       User[]
-}
-
-model Module {
+// Role - User roles for permission management
+model Role {
   id              Int              @id @default(autoincrement())
-  name            String
-  key             String           @unique
-  parentId        Int?
-  isActive        Boolean          @default(true)
+  name            String           // Role name (e.g., "Admin", "Manager", "Employee")
+  companyId       Int              // Company-specific roles
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
-  parent          Module?          @relation("ParentChild", fields: [parentId], references: [id], onDelete: Cascade)
-  children        Module[]         @relation("ParentChild")
-  rolePermissions RolePermission[]
+  
+  // Relations
+  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  rolePermissions RolePermission[] // Permissions assigned to this role
+  users           User[]           // Users with this role
 }
 
+// Module - System modules/features for permission control
+model Module {
+  id              Int              @id @default(autoincrement())
+  name            String           // Module display name
+  key             String           @unique // Unique identifier for code reference
+  parentId        Int?             // For hierarchical module structure
+  isActive        Boolean          @default(true) // Module availability
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  
+  // Self-referential hierarchy
+  parent          Module?          @relation("ParentChild", fields: [parentId], references: [id], onDelete: Cascade)
+  children        Module[]         @relation("ParentChild")
+  
+  // Relations
+  rolePermissions RolePermission[] // Permissions granted on this module
+}
+
+// RolePermission - Junction table for role-based access control (RBAC)
 model RolePermission {
   id        Int     @id @default(autoincrement())
-  roleId    Int
-  moduleId  Int
-  canRead   Boolean @default(false)
-  canWrite  Boolean @default(false)
-  canDelete Boolean @default(false)
+  roleId    Int     // Role reference
+  moduleId  Int     // Module reference
+  canRead   Boolean @default(false) // Read permission
+  canWrite  Boolean @default(false) // Write/Update permission
+  canDelete Boolean @default(false) // Delete permission
+  
+  // Relations
   module    Module  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   role      Role    @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
-  @@unique([roleId, moduleId], name: "unique_role_module")
+  @@unique([roleId, moduleId], name: "unique_role_module") // One permission set per role-module pair
 }
 
-model Company {
-  id              Int             @id @default(autoincrement())
-  name            String
-  email           String?         @unique
-  phone           String?         @unique
-  address         String?
-  isActive        Boolean         @default(true)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  bookings        Booking[]
-  CutoffWindow    CutoffWindow[]
-  department      Department[]
-  drivers         Driver[]
-  roles           Role[]
-  shifts          Shift[]
-  shiftCategories ShiftCategory[]
-  users           User[]
-}
+// =============================================================================
+// TRANSPORT & LOGISTICS MANAGEMENT
+// =============================================================================
 
-model Role {
-  id              Int              @id @default(autoincrement())
-  name            String
-  companyId       Int
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  rolePermissions RolePermission[]
-  users           User[]
-}
-
+// Vendor - Transport service providers
 model Vendor {
   id       Int       @id @default(autoincrement())
-  name     String
-  driverId Int?
-  routes   Route?
-  Trip     Trip[]
-  vehicles Vehicle[]
+  name     String    // Vendor company name
+  driverId Int?      // Optional primary driver assignment
+  companyId Int      // Company that owns this vendor
+  
+  // Relations
+  routes   Route[]   // Routes assigned to vendor
+  Trip     Trip[]    // Trips managed by vendor
+  vehicles Vehicle[] // Vendor's vehicle fleet
   driver   Driver?   @relation(fields: [driverId], references: [id])
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
+// VehicleType - Vehicle categorization (Car, Bus, Van, etc.)
 model VehicleType {
   id       Int       @id @default(autoincrement())
-  name     String
-  vehicles Vehicle[]
+  name     String    // Type name (e.g., "Sedan", "SUV", "Bus")
+  vehicles Vehicle[] // Vehicles of this type
 }
 
+// Vehicle - Transport vehicles
 model Vehicle {
   id            Int               @id @default(autoincrement())
-  vehicleId     String            @unique
-  vendorId      Int
-  vehicleTypeId Int
+  vehicleId     String            @unique // Vehicle registration/identifier
+  vendorId      Int               // Owning vendor
+  vehicleTypeId Int               // Vehicle category
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
-  driver        Driver?           @relation("VehicleDriver")
-  Route         Route?
+  
+  // Relations
+  driver        Driver?           @relation("VehicleDriver") // Assigned driver
+  Route         Route[]           // Assigned routes
   vehicleType   VehicleType       @relation(fields: [vehicleTypeId], references: [id])
   vendor        Vendor            @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  documents     VehicleDocument[]
+  documents     VehicleDocument[] // Vehicle documentation
 }
 
+// VehicleDocument - Vehicle compliance documents
 model VehicleDocument {
   id           Int            @id @default(autoincrement())
-  vehicleId    Int
-  documentType DocumentType
-  filePath     String
-  status       DocumentStatus @default(PENDING)
-  expiryDate   DateTime?
+  vehicleId    Int            // Vehicle reference
+  documentType DocumentType  // Type of document (RC, Insurance, etc.)
+  filePath     String         // Document file location
+  status       DocumentStatus @default(PENDING) // Approval status
+  expiryDate   DateTime?      // Document expiry (if applicable)
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
+  
+  // Relations
   vehicle      Vehicle        @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
-  @@unique([vehicleId, documentType])
+  @@unique([vehicleId, documentType]) // One document per type per vehicle
 }
 
+// Driver - Vehicle operators
 model Driver {
   id              Int               @id @default(autoincrement())
-  name            String
-  email           String?           @unique
-  phone           String?           @unique
-  licenseNo       String
-  vehicleId       Int?              @unique
-  isActive        Boolean           @default(true)
+  name            String            // Driver name
+  email           String?           @unique // Contact email
+  phone           String?           @unique // Contact phone
+  licenseNo       String            // Driving license number
+  vehicleId       Int?              @unique // Assigned vehicle
+  isActive        Boolean           @default(true) // Employment status
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
-  companyId       Int?
-  driverId        String            @unique
+  companyId       Int?              // Company affiliation
+  driverId        String            @unique // Driver identification number
+  
+  // Relations
   company         Company?          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   vehicle         Vehicle?          @relation("VehicleDriver", fields: [vehicleId], references: [id])
-  driverDocuments DriverDocumnets[]
-  Trip            Trip[]
-  vendors         Vendor[]
+  driverDocuments DriverDocument[]  // Driver compliance documents
+  Trip            Trip[]            // Trips assigned to driver
+  vendors         Vendor[]          // Associated vendors
 }
 
-model DriverDocumnets {
+// DriverDocument - Driver compliance documents
+model DriverDocument {
   id           Int            @id @default(autoincrement())
-  driverId     Int
-  documentType DocumentType
-  status       DocumentStatus @default(PENDING)
-  filepath     String
-  expiryDate   DateTime?
+  driverId     Int            // Driver reference
+  documentType DocumentType  // Document type (License, Medical, etc.)
+  status       DocumentStatus @default(PENDING) // Verification status
+  filepath     String         // Document file location
+  expiryDate   DateTime?      // Document expiry date
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
+  
+  // Relations
   driver       Driver         @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
-  @@unique([driverId, documentType])
+  @@unique([driverId, documentType]) // One document per type per driver
 }
 
+// =============================================================================
+// SHIFT & SCHEDULING MANAGEMENT
+// =============================================================================
+
+// ShiftCategory - Shift groupings (Morning, Evening, Night, etc.)
 model ShiftCategory {
   id          Int      @id @default(autoincrement())
-  name        String
-  description String?
+  name        String   // Category name (e.g., "Morning Shift", "Night Shift")
+  description String?  // Category description
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  companyId   Int
-  shifts      Shift[]
-  company     Company  @relation(fields: [companyId], references: [id])
+  companyId   Int      // Company-specific categories
+  
+  // Relations
+  shifts      Shift[]  // Shifts in this category
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
+// Shift - Work shift timings
 model Shift {
   id              Int           @id @default(autoincrement())
-  shiftType       ShiftType
-  hour            Int
-  minute          Int
-  shiftCategoryId Int
+  shiftType       ShiftType     // LOGIN or LOGOUT shift
+  hour            Int           // Hour (0-23)
+  minute          Int           // Minute (0-59)
+  shiftCategoryId Int           // Category assignment
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
-  companyId       Int
-  isActive        Boolean       @default(true)
-  bookings        Booking[]
-  Route           Route[]
-  company         Company       @relation(fields: [companyId], references: [id])
-  shiftCategory   ShiftCategory @relation(fields: [shiftCategoryId], references: [id])
+  companyId       Int           // Company ownership
+  isActive        Boolean       @default(true) // Shift availability
+  
+  // Relations
+  bookings        Booking[]     // Bookings for this shift
+  Route           Route[]       // Routes for this shift
+  company         Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  shiftCategory   ShiftCategory @relation(fields: [shiftCategoryId], references: [id], onDelete: Cascade)
 }
 
+// =============================================================================
+// BOOKING & TRIP MANAGEMENT
+// =============================================================================
+
+// Booking - Employee transport bookings
 model Booking {
   id            Int            @id @default(autoincrement())
-  userId        Int
-  pickupAddress String
-  dropAddress   String
-  status        BookingStatus  @default(PENDING)
-  bookingType   BookingType
-  isAdhoc       Boolean        @default(false)
+  userId        Int           
+  status        BookingStatus  @default(PENDING) 
+  bookingType   BookingType    
+  isAdhoc       Boolean       @default(false) 
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  companyId     Int
-  scheduledTime DateTime
-  shiftId       Int?
-  company       Company        @relation(fields: [companyId], references: [id])
-  shift         Shift?         @relation(fields: [shiftId], references: [id])
-  user          User           @relation(fields: [userId], references: [id])
-  RouteBooking  RouteBooking[]
+  companyId     Int            
+  scheduledTime DateTime       
+  shiftId       Int?          
+ 
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  shift         Shift?         @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  RouteBooking  RouteBooking[] 
 }
 
+// Route - Transport routes
 model Route {
   id            Int            @id @default(autoincrement())
-  distance      Float          @default(0.0)
-  vendorId      Int?           @unique
-  vehicleId     Int?           @unique
-  shiftId       Int?
+  distance      Float          @default(0.0) // Route distance in km
+  vendorId      Int?           // Assigned vendor
+  vehicleId     Int?           // Assigned vehicle
+  shiftId       Int?           // Associated shift
   createdAt     DateTime       @default(now())
-  shift         Shift?         @relation(fields: [shiftId], references: [id])
-  vehicle       Vehicle?       @relation(fields: [vehicleId], references: [id])
-  vendor        Vendor?        @relation(fields: [vendorId], references: [id])
-  routeBookings RouteBooking[]
-  trips         Trip[]
+  
+  // Relations
+  shift         Shift?         @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  vehicle       Vehicle?       @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vendor        Vendor?        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  routeBookings RouteBooking[] // Bookings assigned to this route
+  trips         Trip[]         // Actual trips on this route
 }
 
+// RouteBooking - Junction table linking bookings to routes
 model RouteBooking {
   id        Int      @id @default(autoincrement())
-  routeId   Int
-  bookingId Int
+  routeId   Int      // Route reference
+  bookingId Int      // Booking reference
   createdAt DateTime @default(now())
-  booking   Booking  @relation(fields: [bookingId], references: [id])
-  route     Route    @relation(fields: [routeId], references: [id])
+  
+  // Relations
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  route     Route    @relation(fields: [routeId], references: [id], onDelete: Cascade)
 
-  @@unique([routeId, bookingId])
+  @@unique([routeId, bookingId]) // One booking per route assignment
 }
 
+// Trip - Actual executed trips
 model Trip {
   id        Int        @id @default(autoincrement())
-  driverId  Int
-  vendorId  Int
-  routeId   Int
-  createdBy Int
+  driverId  Int        // Assigned driver
+  vendorId  Int        // Managing vendor
+  routeId   Int        // Trip route
+  createdBy Int        // User who created the trip
   createdAt DateTime   @default(now())
-  status    TripStatus
-  driver    Driver     @relation(fields: [driverId], references: [id])
-  route     Route      @relation(fields: [routeId], references: [id])
-  vendor    Vendor     @relation(fields: [vendorId], references: [id])
+  status    TripStatus // Trip execution status
+  
+  // Relations
+  driver    Driver     @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  route     Route      @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  vendor    Vendor     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  creator   User       @relation("TripCreatedBy", fields: [createdBy], references: [id], onDelete: Cascade)
 }
 
+// =============================================================================
+// BUSINESS RULES & CONFIGURATION
+// =============================================================================
+
+// CutoffWindow - Booking time restrictions
 model CutoffWindow {
   id          Int        @id @default(autoincrement())
-  companyId   Int
-  cutoffType  CutoffType
-  durationMin Int
-  isActive    Boolean    @default(true)
+  companyId   Int        // Company-specific rules
+  cutoffType  CutoffType // Rule type (creation, cancellation, reschedule)
+  durationMin Int        // Cutoff duration in minutes
+  isActive    Boolean    @default(true) // Rule status
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+  
+  // Relations
   company     Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  @@unique([companyId, cutoffType], name: "unique_company_cutoff_type")
+  @@unique([companyId, cutoffType], name: "unique_company_cutoff_type") // One rule per type per company
 }
 
+// =============================================================================
+// WEEK OFF MANAGEMENT
+// =============================================================================
+
+model WeekOff {
+  id           Int          @id @default(autoincrement())
+  companyId    Int?        
+  departmentId Int?         @unique   // one per department
+  userId       Int?         @unique   // one per user
+  daysOfWeek   DayOfWeek[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  company      Company?     @relation(fields: [companyId], references: [id])
+  department   Department?  @relation(fields: [departmentId], references: [id])
+  user         User?        @relation(fields: [userId], references: [id])
+}
+
+// =============================================================================
+// AUDIT & LOGGING
+// =============================================================================
+
+// AuditLog - System audit trail for compliance
 model AuditLog {
   id         Int       @id @default(autoincrement())
-  table_name String    @map("table_name")
-  record_id  Int       @map("record_id")
-  action     String    @map("action") @db.VarChar(10)
-  old_data   Json?     @map("old_data")
-  new_data   Json?     @map("new_data")
-  changed_by String?   @map("changed_by")
-  changed_at DateTime? @default(now()) @map("changed_at") @db.Timestamp(6)
+  table_name String    @map("table_name")    // Affected table
+  record_id  Int       @map("record_id")     // Affected record ID
+  action     String    @map("action") @db.VarChar(10) // Action performed (INSERT, UPDATE, DELETE)
+  old_data   Json?     @map("old_data")      // Previous data state
+  new_data   Json?     @map("new_data")      // New data state
+  changed_by String?   @map("changed_by")    // User who made the change
+  changed_at DateTime? @default(now()) @map("changed_at") @db.Timestamp(6) // When change occurred
 
-  @@map("audit_log")
+  @@map("audit_log") // Custom table name
 }
 
+// =============================================================================
+// ENUMERATIONS
+// =============================================================================
+
+// User classification
 enum UserType {
-  ADMIN
-  SUPER_ADMIN
-  EMPLOYEE
+  ADMIN       // Company administrator
+  SUPER_ADMIN // System administrator
+  EMPLOYEE    // Regular employee
 }
 
+// Gender options
 enum Gender {
   MALE
   FEMALE
   OTHERS
 }
 
+// Special accommodation needs
 enum SpecialNeeds {
-  PREGNENT
+  PREGNANT    // Corrected from original schema typo
 }
 
+// Days of the week for scheduling
 enum DayOfWeek {
   MONDAY
   TUESDAY
@@ -326,57 +446,67 @@ enum DayOfWeek {
   SUNDAY
 }
 
+// Document verification status
 enum DocumentStatus {
-  PENDING
-  APPROVED
-  REJECTED
+  PENDING   // Awaiting review
+  APPROVED  // Verified and accepted
+  REJECTED  // Rejected/invalid
 }
 
+// Types of documents for compliance
 enum DocumentType {
-  LICENSE
-  AADHAR
-  GOV_ID
-  BGV
-  POLICE_VERIFICATION
-  MEDICAL
-  TRAINING
-  EYE_TEST
-  UNDERTAKING
-  INDICATION
-  RC_CARD
-  INSURANCE
-  PERMIT
-  POLLUTION
-  FITNESS
-  TAX_RECEIPT
+  // Driver documents
+  LICENSE             // Driving license
+  AADHAR             // Government ID
+  GOV_ID             // Other government ID
+  BGV                // Background verification
+  POLICE_VERIFICATION // Police clearance
+  MEDICAL            // Medical fitness
+  TRAINING           // Training certificates
+  EYE_TEST           // Vision test
+  UNDERTAKING        // Legal undertaking
+  INDICATION         // Medical indication
+  
+  // Vehicle documents
+  RC_CARD            // Registration certificate
+  INSURANCE          // Vehicle insurance
+  PERMIT             // Route permit
+  POLLUTION          // Pollution certificate
+  FITNESS            // Fitness certificate
+  TAX_RECEIPT        // Tax payment receipt
 }
 
+// Shift timing types
 enum ShiftType {
-  LOGIN
-  LOGOUT
+  LOGIN   // Start of work shift
+  LOGOUT  // End of work shift
 }
 
+// Booking purpose classification
 enum BookingType {
-  LOGIN
-  LOGOUT
-  ADHOC
+  LOGIN  // Transport to work
+  LOGOUT // Transport from work
+  ADHOC  // Ad-hoc/emergency transport
 }
 
+// Booking lifecycle status
 enum BookingStatus {
-  PENDING
-  ASSIGNED
-  COMPLETED
-  CANCELLED
+  PENDING   // Booking created, awaiting assignment
+  ASSIGNED  // Assigned to route/vehicle
+  COMPLETED // Trip completed successfully
+  CANCELLED // Booking cancelled
 }
 
+// Trip execution status
 enum TripStatus {
-  PENDING
-  IN_PROGRESS
-  COMPLETED
+  PENDING     // Trip scheduled but not started
+  IN_PROGRESS // Trip currently in progress
+  COMPLETED   // Trip finished successfully
 }
 
+// Cutoff window rule types
 enum CutoffType {
-  BOOKING_CREATION
-  BOOKING_CANCELLATION
-  BOOKING_RESCHEDULE
+  BOOKING_CREATION     // How far in advance bookings can be made
+  BOOKING_CANCELLATION // How far in advance bookings can be cancelled
+  BOOKING_RESCHEDULE   // How far in advance bookings can be rescheduled
 }

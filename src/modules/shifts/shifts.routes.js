@@ -13,7 +13,7 @@ router.put('/categories/:categoryId', controller.updateShiftCategory);
 router.delete('/categories/:categoryId', controller.deleteShiftCategory);
 
 // Shift Routes
-router.post('/shifts', controller.createShift);
+router.post('/create', controller.createShift);
 router.get('/shifts', controller.getShifts);
 router.get('/shifts/:shiftId', controller.getShift);
 router.put('/shifts/:shiftId', controller.updateShift);
