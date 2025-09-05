@@ -2,7 +2,7 @@ import express from 'express';
 import * as ctrl from './module.controller.js';
 import { authenticate } from '../../middlewares/auth.middleware.js';
 const router = express.Router();
-router.use(authenticate); 
+// router.use(authenticate); 
 
 router.post('/', ctrl.createModule);
 router.get('/', ctrl.getAllModules);

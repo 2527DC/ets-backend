@@ -21,7 +21,9 @@ import path from "path";
 import seedRoutes from "./src/seed/modules.seed.js";
 import { truncateTable } from "./src/utils/truncateTable.js";
 import bookingRoutes from './src/modules/booking/booking.routes.js';
-// Load environment variables
+
+import  productAdmin from './src/modules/admin/admin.routes.js' ;
+
 dotenv.config();
 
 const app = express();
@@ -91,6 +93,7 @@ app.post("/firebase-node", async (req, res) => {
 // app.use("/api", authenticate);
 
 // ✅ All authenticated API routes
+app.use('/api/productAdmin', productAdmin);
 app.use('/api/bookings', bookingRoutes);
 app.use("/api/roles", roleRoutes);
 app.use("/api/audit", auditRoutes);

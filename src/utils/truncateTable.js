@@ -13,7 +13,7 @@ export const truncateTable = async (req, res) => {
     }
 
     // Validate table name to prevent SQL injection
-    const allowedTables = ['Department', 'Employee' ,"User","Company","Module"]; // whitelist
+    const allowedTables = ['Department', 'Employee' ,"User","Company","modules"]; // whitelist
     if (!allowedTables.includes(tableName)) {
       return res.status(400).json({
         status: 'fail',

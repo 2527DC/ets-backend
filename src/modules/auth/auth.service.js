@@ -94,6 +94,42 @@ const login = async (email, password) => {
 };
 
 
+export const superAdminLoginService = async ({ email, password }) => {
+  const superAdmin = await prisma.admin.findUnique({
+    where: { email }
+  });
+
+  if (!superAdmin) {
+    throw new Error("Super Admin not found");
+  }
+
+  // 2. Verify password
+  const isMatch = await bcrypt.compare(password, superAdmin.password);
+  if (!isMatch) {
+    throw new Error("Invalid credentials");
+  }
+
+  // 3. Generate JWT
+  const token = jwt.sign(
+    {
+      id: superAdmin.id,
+      email: superAdmin.email,
+      type: superAdmin.role
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "1d" }
+  );
+
+  // 4. Return sanitized data
+  return {
+    id: superAdmin.id,
+    name: superAdmin.name,
+    email: superAdmin.email,
+    type: superAdmin.role,
+    token
+  };
+};
+
 
 
 
