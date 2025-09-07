@@ -14,7 +14,7 @@ const login = async (email, password) => {
         include: {
           rolePermissions: {
             include: {
-              module: { include: { parent: true } }
+             module: true
             }
           }
         }
@@ -206,5 +206,66 @@ export const employeeLoginService = async (email, password) => {
   }
 };
 
+
+
+
+export const vendorUserLoginService = async (email, password) => {
+  // 1. Find VendorUser with vendor and role info
+  const vendorUser = await prisma.vendorUser.findUnique({
+    where: { email },
+    include: {
+      vendor: true,
+      role: true
+    }
+  });
+
+  if (!vendorUser) {
+    const error = new Error("Vendor User not found");
+    error.status = 404;
+    throw error;
+  }
+
+  if (!vendorUser.isActive) {
+    const error = new Error("Account is deactivated");
+    error.status = 403;
+    throw error;
+  }
+
+  // 2. Compare password
+  const isMatch = await bcrypt.compare(password, vendorUser.password);
+  if (!isMatch) {
+    const error = new Error("Invalid credentials");
+    error.status = 401;
+    throw error;
+  }
+
+  // 3. Generate JWT
+  const token = jwt.sign(
+    {
+      userId: vendorUser.id,
+      vendorId: vendorUser.vendorId,
+      roleId: vendorUser.roleId,
+      email: vendorUser.email
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "1d" }
+  );
+
+  return {
+    token,
+    user: {
+      id: vendorUser.id,
+      name: vendorUser.name,
+      email: vendorUser.email,
+      phone: vendorUser.phone,
+      role: vendorUser.role?.name || null,
+      vendor: {
+        id: vendorUser.vendor.id,
+        name: vendorUser.vendor.name,
+        isActive: vendorUser.vendor.isActive,
+      }
+    }
+  };
+  };
 
 export default { login };

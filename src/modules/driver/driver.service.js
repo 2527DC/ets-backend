@@ -79,6 +79,7 @@ console.log("File map:", fileMap);
 };
 
 
+
 export const getAllDrivers = async (companyId) => {
   return await prisma.driver.findMany({
     where: { companyId: companyId }, // ✅ correct object syntax

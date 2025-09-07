@@ -1,4 +1,4 @@
-import authService, { createSuperAdmin, employeeLoginService, superAdminLoginService } from "./auth.service.js";
+import authService, { createSuperAdmin, employeeLoginService, superAdminLoginService ,vendorUserLoginService  } from "./auth.service.js";
 
 export const login = async (req, res) => {
   try {
@@ -98,5 +98,33 @@ export const createSuperAdminController = async (req, res) => {
   } catch (err) {
     console.error('Create Super Admin Error:', err);
     return res.status(err.status || 500).json({ message: err.message || 'Something went wrong' });
+  }
+  
+};
+
+
+export const vendorUserLogin = async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    // 1. Call service
+    const { token, user } = await vendorUserLoginService(email, password);
+
+    // 2. Return structured response
+    return res.status(200).json({
+      success: true,
+      message: "Vendor user login successful",
+      data: {
+        token,
+        user,
+      },
+    });
+  } catch (err) {
+    console.error("Vendor User Login error:", err);
+
+    return res.status(err.status || 401).json({
+      success: false,
+      message: err.message || "Login failed",
+    });
   }
 };

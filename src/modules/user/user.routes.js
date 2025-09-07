@@ -27,6 +27,7 @@ router.get('/department-employees/:id', controller.getEmployeesByDepartments);
 router.get("/employee/search", controller.searchEmployees);
 
 router.get('/employees', controller.getAllEmployees); 
+
 // ❗️Dynamic routes must come last to avoid conflict
 router.put('/update-department/:id', controller.updateDepartments);
 router.delete('/delete-departments/:id', controller.deleteDepartments);
