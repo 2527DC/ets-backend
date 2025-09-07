@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 const login = async (email, password) => {
   
-  const user = await prisma.user.findUnique({
+  const user = await prisma.admin.findUnique({
     where: { email },
     include: {
       role: {
@@ -67,6 +67,7 @@ const login = async (email, password) => {
     token
   };
 };
+
 
 export const superAdminLoginService = async ({ email, password }) => {
   const superAdmin = await prisma.admin.findUnique({

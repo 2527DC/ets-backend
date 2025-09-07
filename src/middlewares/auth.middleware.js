@@ -29,9 +29,12 @@ export const authenticate = async (req, res, next) => {
       };
       return next();
     }
-    if (!id || !roleId) {
-      return res.status(401).json({ message: 'Invalid token payload' });
-    }
+
+    // if (!id || !roleId) {
+    //   return res.status(401).json({ message: 'Invalid token payload' });
+    // }
+
+    
     // 🔍 Fetch only necessary fields from rolePermission and module
     const rolePermissions = await prisma.rolePermission.findMany({
       where: { roleId },

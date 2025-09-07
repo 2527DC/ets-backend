@@ -89,6 +89,7 @@ export const createSuperAdminController = async (req, res) => {
   
 };
 
+
 export const vendorUserLogin = async (req, res) => {
   const { email, password } = req.body;
 
