@@ -34,13 +34,14 @@ console.log(" the super admin login invoked ");
     return res.status(200).json({
       success: true,
       message: "Super Admin login successful",
-      admin: {
+      user: {
         id: result.id,
         name: result.name,
         email: result.email,
         type: result.type
       },
-      token: result.token
+      token: result.token,
+      allowedModules:[]
     });
 
   } catch (err) {
@@ -53,20 +54,6 @@ console.log(" the super admin login invoked ");
 };
 
 
-export const adminLoginContoller = async (req, res) => {
-  try {
-    console.log(" this is the login ");
-
-    const { email, password } = req.body;
-    const result = await authService.login(email, password);
-    return res.json(result);
-  } catch (err) {
-    console.error("Login error:", err);
-    return res
-      .status(err.status || 500)
-      .json({ message: err.message || "Something went wrong" });
-  }
-};
 
 
 export const employeeLogin = async (req, res) => {
@@ -102,29 +89,26 @@ export const createSuperAdminController = async (req, res) => {
   
 };
 
-
 export const vendorUserLogin = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // 1. Call service
-    const { token, user } = await vendorUserLoginService(email, password);
+    const { token, user, permissions } = await vendorUserLoginService(email, password);
 
-    // 2. Return structured response
     return res.status(200).json({
-      success: true,
-      message: "Vendor user login successful",
-      data: {
-        token,
-        user,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        vendor: user.vendor,
       },
+      allowedModules: user.permissions, // ✅ same as company
+      token
     });
   } catch (err) {
     console.error("Vendor User Login error:", err);
-
-    return res.status(err.status || 401).json({
-      success: false,
-      message: err.message || "Login failed",
-    });
+    return res.status(err.status || 401).json({ message: err.message || "Login failed" });
   }
 };

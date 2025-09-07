@@ -112,11 +112,8 @@ export const getPermissionsFromToken = async (companyId, roleId) => {
     const rolePermissions = await prisma.rolePermission.findMany({
       where: { roleId },
       include: {
-        module: {
-          include: {
-            parent: true, // get parent module if it exists
-          },
-        },
+        module:true
+         
       },
     });
 

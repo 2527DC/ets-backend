@@ -4,7 +4,6 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
-
 const login = async (email, password) => {
   
   const user = await prisma.user.findUnique({
@@ -14,7 +13,13 @@ const login = async (email, password) => {
         include: {
           rolePermissions: {
             include: {
-             module: true
+              module: {
+                select: {
+                  key: true,
+                  name: true,
+                  isRestricted: true
+                }
+              }
             }
           }
         }
@@ -28,71 +33,40 @@ const login = async (email, password) => {
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) throw { status: 401, message: 'Invalid credentials' };
 
-  let allowedModules = [];
-
-  if (user) {
-    const moduleMap = new Map();
-
-    user.role?.rolePermissions.forEach(rp => {
-      const mod = rp.module;
-      if (!mod.parentId) {
-        if (!moduleMap.has(mod.key)) {
-          moduleMap.set(mod.key, {
-            id: mod.key,
-            canRead: rp.canRead,
-            canWrite: rp.canWrite,
-            canDelete: rp.canDelete,
-            children: []
-          });
-        }
-      } else {
-        const parent = mod.parent;
-        let parentEntry = moduleMap.get(parent.key);
-        if (!parentEntry) {
-          parentEntry = {
-            id: parent.key,
-            canRead: true,
-            canWrite: true,
-            canDelete: true,
-            children: []
-          };
-          moduleMap.set(parent.key, parentEntry);
-        }
-        parentEntry.children.push({
-          id: mod.key,
-          canRead: rp.canRead,
-          canWrite: rp.canWrite,
-          canDelete: rp.canDelete
-        });
-      }
-    });
-
-    allowedModules = Array.from(moduleMap.values());
-  }
-
   const tokenPayload = {
     id: user.id,
     email: user.email,
-    type: user.type,
+    type: "COMPANY",
     ...(user.companyId && { companyId: user.companyId }),
-    // ...(user.role?.name && { role: user.role.name }),
+    companyName: user.company?.name || null,
     ...(user.role?.id && { roleId: user.role.id }) 
   };
 
   const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '8h' });
 
+  // Transform rolePermissions to use module key and remove unnecessary fields
+  const allowedModules = user.role?.rolePermissions?.map(permission => ({
+    moduleKey: permission.module.key,
+    moduleName: permission.module.name,
+    isRestricted: permission.module.isRestricted,
+    canRead: permission.canRead,
+    canWrite: permission.canWrite,
+    canDelete: permission.canDelete
+  })) || [];
+
   return {
-    user:{id: user.id,
+    user: {
+      id: user.id,
       name: user.name,
       email: user.email,
-      type: user.type.toLowerCase(),
-      companyName: user.company?.name ||null ,
-      role: user.role?.name },
+      type: "COMPANY",
+      companyName: user.company?.name || null,
+      role: user.role?.name 
+    },
     allowedModules,
     token
   };
 };
-
 
 export const superAdminLoginService = async ({ email, password }) => {
   const superAdmin = await prisma.admin.findUnique({
@@ -103,33 +77,34 @@ export const superAdminLoginService = async ({ email, password }) => {
     throw new Error("Super Admin not found");
   }
 
-  // 2. Verify password
+  // Verify password
   const isMatch = await bcrypt.compare(password, superAdmin.password);
   if (!isMatch) {
     throw new Error("Invalid credentials");
   }
 
-  // 3. Generate JWT
+  // Generate JWT with consistent payload structure
   const token = jwt.sign(
     {
       id: superAdmin.id,
       email: superAdmin.email,
-      type: superAdmin.role
+      type: superAdmin.role ,// Use consistent type naming
+      role: []// Include role if needed
     },
-    process.env.JWT_SECRET,
+    JWT_SECRET,
     { expiresIn: "1d" }
   );
 
-  // 4. Return sanitized data
+  // Return sanitized data
   return {
     id: superAdmin.id,
     name: superAdmin.name,
     email: superAdmin.email,
-    type: superAdmin.role,
+    type: 'SUPER_ADMIN', // Consistent type
+    role: superAdmin.role,
     token
   };
 };
-
 
 
 
@@ -208,49 +183,49 @@ export const employeeLoginService = async (email, password) => {
 
 
 
-
+// ✅ Vendor User Login Service
 export const vendorUserLoginService = async (email, password) => {
-  // 1. Find VendorUser with vendor and role info
+  // 1️⃣ Find Vendor User with vendor + role details
   const vendorUser = await prisma.vendorUser.findUnique({
     where: { email },
     include: {
       vendor: true,
-      role: true
-    }
+      role: true, // role contains permissions JSON
+    },
   });
 
+  // 2️⃣ Check if user exists
   if (!vendorUser) {
-    const error = new Error("Vendor User not found");
-    error.status = 404;
-    throw error;
+    throw { status: 404, message: "Vendor User not found" };
   }
 
+  // 3️⃣ Check if account is active
   if (!vendorUser.isActive) {
-    const error = new Error("Account is deactivated");
-    error.status = 403;
-    throw error;
+    throw { status: 403, message: "Account is deactivated" };
   }
 
-  // 2. Compare password
+  // 4️⃣ Compare password
   const isMatch = await bcrypt.compare(password, vendorUser.password);
   if (!isMatch) {
-    const error = new Error("Invalid credentials");
-    error.status = 401;
-    throw error;
+    throw { status: 401, message: "Invalid credentials" };
   }
 
-  // 3. Generate JWT
+  // 5️⃣ Extract permissions from role JSON
+  const permissions = vendorUser.role?.permissions || [];
+
+  // 6️⃣ Generate JWT
   const token = jwt.sign(
     {
       userId: vendorUser.id,
       vendorId: vendorUser.vendorId,
       roleId: vendorUser.roleId,
-      email: vendorUser.email
+      email: vendorUser.email,
     },
-    process.env.JWT_SECRET,
+    JWT_SECRET,
     { expiresIn: "1d" }
   );
 
+  // 7️⃣ Structured response
   return {
     token,
     user: {
@@ -263,9 +238,12 @@ export const vendorUserLoginService = async (email, password) => {
         id: vendorUser.vendor.id,
         name: vendorUser.vendor.name,
         isActive: vendorUser.vendor.isActive,
-      }
-    }
+      },
+      permissions,
+    },
   };
-  };
+};
+
+
 
 export default { login };

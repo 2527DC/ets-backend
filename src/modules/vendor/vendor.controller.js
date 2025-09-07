@@ -1,17 +1,19 @@
 // /src/modules/vendor/vendor.controller.js
 import * as vendorService from './vendor.service.js';
 
-
 // ---------------- CREATE VENDOR ----------------
-
 export const createVendor = async (req, res) => {
   try {
-    const { companyId } = req.user; // Company context
     const { vendor: vendorData, adminUser, permissions = [] } = req.body;
 
-    // Call service
-    const newVendor = await vendorService.createVendor(vendorData, adminUser, permissions, companyId);
+    // 1️⃣ Call service to create vendor, admin, and assign permissions
+    const newVendor = await vendorService.createVendor(
+      vendorData,
+      adminUser,
+      permissions,
+    );
 
+    // 2️⃣ Send structured response
     return res.status(201).json({
       success: true,
       message: 'Vendor created successfully',
@@ -19,6 +21,7 @@ export const createVendor = async (req, res) => {
     });
   } catch (err) {
     console.error('Create vendor error:', err);
+
     return res.status(err.status || 500).json({
       success: false,
       message: err.message || 'Failed to create vendor',
@@ -34,7 +37,7 @@ export const createVendor = async (req, res) => {
 // ---------------- GET ALL VENDORS ----------------
 export const getAllVendors = async (req, res) => {
   try {
-    const vendors = await vendorService.getAllVendors(); // no companyId passed
+    const vendors = await vendorService.getAllVendors(); 
 
     return res.status(200).json({
       success: true,
@@ -77,7 +80,25 @@ export const getVendorById = async (req, res) => {
 export const updateVendor = async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const updatedVendor = await vendorService.updateVendor(id, req.body);
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Vendor ID is required",
+      });
+    }
+
+    const vendorData = req.body;
+
+    // Call service layer
+    const updatedVendor = await vendorService.updateVendor(id, vendorData);
+
+    if (!updatedVendor) {
+      return res.status(404).json({
+        success: false,
+        message: "Vendor not found",
+      });
+    }
 
     return res.status(200).json({
       success: true,
@@ -93,6 +114,7 @@ export const updateVendor = async (req, res) => {
     });
   }
 };
+
 
 
 // ---------------- DELETE VENDOR ----------------
