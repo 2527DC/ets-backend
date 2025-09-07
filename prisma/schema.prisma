@@ -18,7 +18,7 @@ model Admin {
   name      String
   email     String   @unique
   password  String
-  role      String   @default("PLATFORM_ADMIN")
+  role      String   @default("MASTER_ADMIN")
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -1,7 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-
-// /src/modules/vendor/vendor.service.js
-
 const prisma = new PrismaClient();
 
 export const createVendor = async (vendorData, companyId) => {

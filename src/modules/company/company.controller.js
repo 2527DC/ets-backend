@@ -3,8 +3,18 @@ import companyService from './company.service.js';
 
 // Create new company
 export const createCompany = async (req, res) => {
-  try {
+try {
+  const {role}=req.user
+console.log(" this is the role in company  create ",role);
+
+   if (role!=="PLATFORM_ADMIN") {
+    return res.status(401).json({sucess:false,
+      message:" You Cant Company u dont have authority"
+    });
+   }
     const { company: companydata, adminUser,  permissions } = req.body;
+console.log(" this is the Req atta payloud " ,req.user);
+
 
     const company = await companyService.createCompany( companydata, adminUser, permissions );
 
