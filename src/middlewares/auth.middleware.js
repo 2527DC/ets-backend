@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
+const JWT_SECRET =  'supersecret';
 
 export const authenticate = async (req, res, next) => {
   try {
@@ -29,7 +29,7 @@ export const authenticate = async (req, res, next) => {
       };
       return next();
     }
-    if (!id || !roleId) {
+    if (!id) {
       return res.status(401).json({ message: 'Invalid token payload' });
     }
     // 🔍 Fetch only necessary fields from rolePermission and module
