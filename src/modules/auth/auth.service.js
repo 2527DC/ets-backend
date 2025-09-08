@@ -126,7 +126,6 @@ export const createSuperAdmin = async ({ email, password, name ,phone}) => {
       isActive: true,
     },
   });
-
   return {
     message: 'Super Admin created successfully',
     userId: newUser.id,
