@@ -2,7 +2,9 @@ import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
-const JWT_SECRET =  'supersecret';
+
+// ✅ Always use the same secret for sign + verify
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 
 export const authenticate = async (req, res, next) => {
   try {
@@ -12,12 +14,12 @@ export const authenticate = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
+
+    // ✅ Verify using the same secret
     const decoded = jwt.verify(token, JWT_SECRET);
-    const { id, companyId, roleId, role, type , email } = decoded;
+    const { id, companyId, roleId, role, type, email } = decoded;
 
-
-
-    // 🚀 SUPER_ADMIN bypass: no DB calls, full permissions
+    // 🚀 SUPER_ADMIN bypass
     if (type === 'SUPER_ADMIN') {
       req.user = {
         id,
@@ -25,13 +27,15 @@ export const authenticate = async (req, res, next) => {
         role,
         roleId,
         companyId,
-        permissions: ['*'] // or full list if you want
+        permissions: ['*']
       };
       return next();
     }
+
     if (!id) {
       return res.status(401).json({ message: 'Invalid token payload' });
     }
+
     // 🔍 Fetch only necessary fields from rolePermission and module
     const rolePermissions = await prisma.rolePermission.findMany({
       where: { roleId },
@@ -57,10 +61,9 @@ export const authenticate = async (req, res, next) => {
     }
 
     // 🪪 Attach to req.user
-    req.user = { id, type, role, roleId,email, companyId, permissions };
+    req.user = { id, type, role, roleId, email, companyId, permissions };
 
     return next();
-
   } catch (err) {
     console.error('Auth Middleware Error:', err);
 
@@ -75,4 +78,3 @@ export const authenticate = async (req, res, next) => {
     return res.status(401).json({ message: 'Authentication failed.' });
   }
 };
-
