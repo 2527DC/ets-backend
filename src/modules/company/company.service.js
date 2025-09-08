@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 import bcrypt from 'bcrypt';
 
+
 // Create company
 const createCompany = async ( companydata, adminUser, permissions ) => {
   
@@ -114,6 +115,7 @@ const updateCompany = async (id, data) => {
     data,
   });
 };
+
 
 // Delete company
 const deleteCompany = async (id) => {

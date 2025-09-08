@@ -12,8 +12,8 @@ router.use(authenticate);
 // --- VENDOR CRUD ROUTES ---
 router.post('/',validate(CreateVendorSchema), vendorController.createVendor);
 router.get('/all-vendors',  vendorController.getAllVendors);
-router.get('/vendor/:id', vendorController.getVendorById);
-router.put(  '/update-vendor/:id',  validate(UpdateVendorSchema),  vendorController.updateVendor);
-router.delete(  '/delete-vendor/:id',  vendorController.deleteVendor);
+router.get('/:id', vendorController.getVendorById);
+router.put(  '/:id',  validate(UpdateVendorSchema),  vendorController.updateVendor);
+router.delete( '/:id',  vendorController.deleteVendor);
 
 export default router;

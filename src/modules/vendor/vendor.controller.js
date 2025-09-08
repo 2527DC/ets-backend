@@ -4,30 +4,46 @@ import * as vendorService from './vendor.service.js';
 // ---------------- CREATE VENDOR ----------------
 export const createVendor = async (req, res) => {
   try {
+    const { type } = req.user;
+
+    // 🔒 Authorization check (similar to company)
+    if (type !== "MASTER_ADMIN") {
+      return res.status(401).json({
+        success: false,
+        message: "You cannot create a vendor, you don't have authority",
+      });
+    }
+
     const { vendor: vendorData, adminUser, permissions = [] } = req.body;
 
-    // 1️⃣ Call service to create vendor, admin, and assign permissions
+    console.log("Request payload user info:", req.user);
+
+    // 🚀 Call service
     const newVendor = await vendorService.createVendor(
       vendorData,
       adminUser,
-      permissions,
+      permissions
     );
 
-    // 2️⃣ Send structured response
+    // ✅ Structured response (similar to company)
     return res.status(201).json({
       success: true,
-      message: 'Vendor created successfully',
+      message: "Vendor created successfully",
       data: newVendor,
     });
   } catch (err) {
-    console.error('Create vendor error:', err);
+    console.error("Create vendor error:", err);
 
+    // Normalize error for client
     return res.status(err.status || 500).json({
       success: false,
-      message: err.message || 'Failed to create vendor',
+      message: err.message || "Failed to create vendor",
+      error: process.env.NODE_ENV === "development" ? err.stack : undefined,
     });
   }
 };
+
+
 
 
 

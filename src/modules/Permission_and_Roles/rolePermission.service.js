@@ -108,65 +108,31 @@ export const getPermissionsFromToken = async (companyId, roleId) => {
       throw new Error("Invalid token payload: missing companyId or role");
     }
 
-    // 1️⃣ Get role permissions along with module and its parent
+    // 1️⃣ Get role permissions with modules
     const rolePermissions = await prisma.rolePermission.findMany({
-      where: { roleId },
+      where: {
+        roleId,
+        module: {
+          isActive: true, // ✅ only include active modules
+        },
+      },
       include: {
-        module:true
-         
+        module: true, // just get module info, no nesting
       },
     });
 
     if (!rolePermissions || rolePermissions.length === 0) {
-      throw new Error("No role permissions found for this company");
+      throw new Error("No role permissions found for this role");
     }
 
-    // 2️⃣ Build map of modules -> children
-    const moduleMap = new Map();
-
-    rolePermissions.forEach((rp) => {
-      const mod = rp.module;
-
-      if (!mod.parentId) {
-        // Parent module
-        if (!moduleMap.has(mod.key)) {
-          moduleMap.set(mod.key, {
-            id: mod.key,
-            canRead: rp.canRead,
-            canWrite: rp.canWrite,
-            canDelete: rp.canDelete,
-            children: [],
-          });
-        }
-      } else {
-        // Child module
-        const parent = mod.parent;
-        if (!parent) return; // safety check
-
-        let parentEntry = moduleMap.get(parent.key);
-        if (!parentEntry) {
-          // If parent not yet added, add it with default perms
-          parentEntry = {
-            id: parent.key,
-            canRead: true,
-            canWrite: true,
-            canDelete: true,
-            children: [],
-          };
-          moduleMap.set(parent.key, parentEntry);
-        }
-
-        parentEntry.children.push({
-          id: mod.key,
-          canRead: rp.canRead,
-          canWrite: rp.canWrite,
-          canDelete: rp.canDelete,
-        });
-      }
-    });
-
-    // 3️⃣ Convert map to array
-    const allowedModules = Array.from(moduleMap.values());
+    // 2️⃣ Build flat array of modules with permissions
+    const allowedModules = rolePermissions.map((rp) => ({
+      moduleKey: rp.module.key,
+      canRead: rp.canRead,
+      canWrite: rp.canWrite,
+      canDelete: rp.canDelete,  
+      isRestricted :rp.module.isRestricted
+    }));
 
     return allowedModules;
   } catch (err) {

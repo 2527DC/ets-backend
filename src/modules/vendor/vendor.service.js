@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 
+
 export const createVendor = async (vendorData, adminUser = null, permissions = []) => {
   const { licenseNumber, gstNumber, phone, email, ...vendorDetails } = vendorData;
 
@@ -35,29 +36,30 @@ export const createVendor = async (vendorData, adminUser = null, permissions = [
 
   // 2️⃣ Start transaction
   return await prisma.$transaction(async (tx) => {
-    // Create vendor
-    const vendor = await tx.vendor.create({
+    // Create Vendor
+    const newVendor = await tx.vendor.create({
       data: {
         ...vendorDetails,
         licenseNumber: licenseNumber || null,
         gstNumber: gstNumber || null,
         phone: phone || null,
         email: email || null,
+        isActive: vendorData.isActive ?? true,
+        onboardedAt: vendorData.onboardedAt ?? new Date(),
       },
     });
 
-    // Create default admin role
+    // Create default role: Vendor Admin
     const newRole = await tx.vendorRole.create({
       data: {
         name: "Vendor Admin",
-        vendorId: vendor.id,
+        vendorId: newVendor.id,
       },
     });
 
     // Create admin user if provided
-    let vendorUser = null;
+    let newVendorUser = null;
     if (adminUser?.password) {
-      // Check for duplicate admin email
       const existingAdmin = await tx.vendorUser.findUnique({
         where: { email: adminUser.email },
       });
@@ -68,24 +70,23 @@ export const createVendor = async (vendorData, adminUser = null, permissions = [
       }
 
       const hashedPassword = await bcrypt.hash(adminUser.password, 10);
-      vendorUser = await tx.vendorUser.create({
+      newVendorUser = await tx.vendorUser.create({
         data: {
           name: adminUser.name,
           email: adminUser.email,
           phone: adminUser.phone || null,
           password: hashedPassword,
-          vendorId: vendor.id,
+          vendorId: newVendor.id,
           roleId: newRole.id,
+          type: "VENDOR_ADMIN",
           isActive: true,
         },
       });
     }
 
-    // Handle permissions (if provided)
-    let rolePermissions = [];
+    // Handle permissions if provided
     if (permissions.length > 0) {
       const moduleKeys = permissions.map((p) => p.moduleKey);
-
       const modules = await tx.module.findMany({
         where: { key: { in: moduleKeys } },
       });
@@ -93,7 +94,6 @@ export const createVendor = async (vendorData, adminUser = null, permissions = [
       const permissionsData = permissions.map((perm) => {
         const matchedModule = modules.find((m) => m.key === perm.moduleKey);
         if (!matchedModule) throw new Error(`Invalid moduleKey: ${perm.moduleKey}`);
-
         return {
           roleId: newRole.id,
           moduleId: matchedModule.id,
@@ -104,103 +104,51 @@ export const createVendor = async (vendorData, adminUser = null, permissions = [
       });
 
       await tx.vendorRolePermission.createMany({ data: permissionsData });
-
-      // Fetch back permissions with module info
-      rolePermissions = await tx.vendorRolePermission.findMany({
-        where: { roleId: newRole.id },
-        include: { module: true },
-      });
     }
 
-    // 8️⃣ Return structured response
+    // ✅ Return full objects like company creation
     return {
-      vendor: {
-        id: vendor.id,
-        name: vendor.name,
-        email: vendor.email,
-        phone: vendor.phone,
-        licenseNumber: vendor.licenseNumber,
-        gstNumber: vendor.gstNumber,
-        isActive: vendor.isActive,
-      },
-      adminUser: vendorUser
-        ? {
-            id: vendorUser.id,
-            name: vendorUser.name,
-            email: vendorUser.email,
-            phone: vendorUser.phone,
-            role: newRole.name,
-            permissions: rolePermissions.map((p) => ({
-              module: p.module.key,
-              canRead: p.canRead,
-              canWrite: p.canWrite,
-              canDelete: p.canDelete,
-            })),
-          }
-        : null,
-      role: {
-        id: newRole.id,
-        name: newRole.name,
-        vendorId: newRole.vendorId,
-      },
+      vendor: newVendor,
+      adminUser: newVendorUser,
+      role: newRole,
     };
   });
 };
 
 
 
+
 // ---------------- UPDATE VENDOR ----------------
-export const updateVendor = async (id, vendorData) => {
-  try {
-    // 🔹 Check for duplicates excluding the current vendor
-    const conditions = [];
-    if (vendorData.licenseNumber) conditions.push({ licenseNumber: vendorData.licenseNumber });
-    if (vendorData.gstNumber) conditions.push({ gstNumber: vendorData.gstNumber });
-    if (vendorData.phone) conditions.push({ phone: vendorData.phone });
-    if (vendorData.email) conditions.push({ email: vendorData.email });
+export const updateVendor = async (id, data) => {
+  // 1️⃣ Check if vendor exists
+  const vendor = await prisma.vendor.findUnique({ where: { id } });
+  if (!vendor) throw { status: 404, message: "Vendor not found" };
 
-    if (conditions.length > 0) {
-      const duplicate = await prisma.vendor.findFirst({
-        where: {
-          AND: [
-            { id: { not: Number(id) } },
-            { OR: conditions },
-          ],
-        },
-      });
-
-      if (duplicate) {
-        let field = '';
-        if (vendorData.licenseNumber && duplicate.licenseNumber === vendorData.licenseNumber) field = 'licenseNumber';
-        else if (vendorData.gstNumber && duplicate.gstNumber === vendorData.gstNumber) field = 'gstNumber';
-        else if (vendorData.phone && duplicate.phone === vendorData.phone) field = 'phone';
-        else if (vendorData.email && duplicate.email === vendorData.email) field = 'email';
-
-        const err = new Error(`${field} already exists`);
-        err.status = 409;
-        throw err;
-      }
-    }
-
-    // 🔹 Update vendor
-    const updatedVendor = await prisma.vendor.update({
-      where: { id: Number(id) },
-      data: vendorData,
-    });
-
-    return updatedVendor;
-  } catch (error) {
-    if (error.code === "P2025") {
-      const err = new Error("Vendor not found");
-      err.status = 404;
-      throw err;
-    }
-    if (error.status) throw error;
-
-    console.error("Prisma updateVendor error:", error);
-    throw new Error(`Error updating vendor: ${error.message}`);
+  // 2️⃣ Optional: check for unique fields conflict
+  if (data.email && data.email !== vendor.email) {
+    const emailExists = await prisma.vendor.findUnique({ where: { email: data.email } });
+    if (emailExists) throw { status: 409, message: "Email already in use" };
   }
+  if (data.phone && data.phone !== vendor.phone) {
+    const phoneExists = await prisma.vendor.findFirst({ where: { phone: data.phone } });
+    if (phoneExists) throw { status: 409, message: "Phone already in use" };
+  }
+  if (data.licenseNumber && data.licenseNumber !== vendor.licenseNumber) {
+    const licenseExists = await prisma.vendor.findFirst({ where: { licenseNumber: data.licenseNumber } });
+    if (licenseExists) throw { status: 409, message: "License number already in use" };
+  }
+  if (data.gstNumber && data.gstNumber !== vendor.gstNumber) {
+    const gstExists = await prisma.vendor.findFirst({ where: { gstNumber: data.gstNumber } });
+    if (gstExists) throw { status: 409, message: "GST number already in use" };
+  }
+
+  // 3️⃣ Update vendor
+  return prisma.vendor.update({
+    where: { id },
+    data,
+  });
 };
+
 
 
 // ---------------- DELETE VENDOR ----------------
@@ -241,7 +189,6 @@ export const getVendorById = async (id) => {
     error.status = 404;
     throw error;
   }
-
   return vendor;
 };
 

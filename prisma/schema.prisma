@@ -284,6 +284,7 @@ model VendorUser {
   phone     String?  @unique
   password  String
   isActive  Boolean  @default(true)
+  type         String   @default("STANDARD")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

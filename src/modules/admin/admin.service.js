@@ -22,7 +22,7 @@ export const createProductAdminService = async (data) => {
       name,
       email,
       password: hashedPassword,
-      role: role || "PLATFORM_ADMIN",
+
     },
   });
 
