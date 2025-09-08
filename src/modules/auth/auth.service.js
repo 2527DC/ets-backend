@@ -101,7 +101,7 @@ export const superAdminLoginService = async ({ email, password }) => {
     id: superAdmin.id,
     name: superAdmin.name,
     email: superAdmin.email,
-    type: 'SUPER_ADMIN', // Consistent type
+    type: superAdmin.role , // Consistent type
     role: superAdmin.role,
     token
   };

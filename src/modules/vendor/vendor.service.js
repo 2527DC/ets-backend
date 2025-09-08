@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 export const createVendor = async (vendorData, adminUser = null, permissions = []) => {
   const { licenseNumber, gstNumber, phone, email, ...vendorDetails } = vendorData;
 
-  // 1️⃣ Duplicate check
+  // 1️⃣ Check for duplicate vendor fields
   const existingVendor = await prisma.vendor.findFirst({
     where: {
       OR: [
@@ -33,9 +33,9 @@ export const createVendor = async (vendorData, adminUser = null, permissions = [
     throw err;
   }
 
-  // 2️⃣ Transaction starts
+  // 2️⃣ Start transaction
   return await prisma.$transaction(async (tx) => {
-    // 2️⃣ Create vendor
+    // Create vendor
     const vendor = await tx.vendor.create({
       data: {
         ...vendorDetails,
@@ -46,7 +46,7 @@ export const createVendor = async (vendorData, adminUser = null, permissions = [
       },
     });
 
-    // 3️⃣ Create default admin role
+    // Create default admin role
     const newRole = await tx.vendorRole.create({
       data: {
         name: "Vendor Admin",
@@ -54,9 +54,19 @@ export const createVendor = async (vendorData, adminUser = null, permissions = [
       },
     });
 
-    // 4️⃣ Create admin user if provided
+    // Create admin user if provided
     let vendorUser = null;
     if (adminUser?.password) {
+      // Check for duplicate admin email
+      const existingAdmin = await tx.vendorUser.findUnique({
+        where: { email: adminUser.email },
+      });
+      if (existingAdmin) {
+        const err = new Error("Vendor admin with this email already exists");
+        err.status = 409;
+        throw err;
+      }
+
       const hashedPassword = await bcrypt.hash(adminUser.password, 10);
       vendorUser = await tx.vendorUser.create({
         data: {
@@ -67,34 +77,39 @@ export const createVendor = async (vendorData, adminUser = null, permissions = [
           vendorId: vendor.id,
           roleId: newRole.id,
           isActive: true,
-          type: "VENDORADMIN",
         },
       });
     }
 
-    // 5️⃣ Fetch modules by keys
-    const moduleKeys = permissions.map((p) => p.moduleKey);
-    const modules = await tx.module.findMany({
-      where: { key: { in: moduleKeys } },
-    });
+    // Handle permissions (if provided)
+    let rolePermissions = [];
+    if (permissions.length > 0) {
+      const moduleKeys = permissions.map((p) => p.moduleKey);
 
-    // 6️⃣ Prepare role permissions
-    const permissionsData = permissions.map((perm) => {
-      const matchedModule = modules.find((m) => m.key === perm.moduleKey);
-      if (!matchedModule) throw new Error(`Invalid moduleKey: ${perm.moduleKey}`);
+      const modules = await tx.module.findMany({
+        where: { key: { in: moduleKeys } },
+      });
 
-      return {
-        roleId: newRole.id,
-        moduleId: matchedModule.id,
-        canRead: perm.canRead,
-        canWrite: perm.canWrite,
-        canDelete: perm.canDelete,
-      };
-    });
+      const permissionsData = permissions.map((perm) => {
+        const matchedModule = modules.find((m) => m.key === perm.moduleKey);
+        if (!matchedModule) throw new Error(`Invalid moduleKey: ${perm.moduleKey}`);
 
-    // 7️⃣ Create permissions if any
-    if (permissionsData.length > 0) {
+        return {
+          roleId: newRole.id,
+          moduleId: matchedModule.id,
+          canRead: perm.canRead,
+          canWrite: perm.canWrite,
+          canDelete: perm.canDelete,
+        };
+      });
+
       await tx.vendorRolePermission.createMany({ data: permissionsData });
+
+      // Fetch back permissions with module info
+      rolePermissions = await tx.vendorRolePermission.findMany({
+        where: { roleId: newRole.id },
+        include: { module: true },
+      });
     }
 
     // 8️⃣ Return structured response
@@ -115,14 +130,23 @@ export const createVendor = async (vendorData, adminUser = null, permissions = [
             email: vendorUser.email,
             phone: vendorUser.phone,
             role: newRole.name,
-            // type: vendorUser.type,
-            permissions: permissions,
+            permissions: rolePermissions.map((p) => ({
+              module: p.module.key,
+              canRead: p.canRead,
+              canWrite: p.canWrite,
+              canDelete: p.canDelete,
+            })),
           }
         : null,
-      role: newRole,
+      role: {
+        id: newRole.id,
+        name: newRole.name,
+        vendorId: newRole.vendorId,
+      },
     };
   });
 };
+
 
 
 // ---------------- UPDATE VENDOR ----------------

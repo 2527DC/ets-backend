@@ -4,10 +4,9 @@ import companyService from './company.service.js';
 // Create new company
 export const createCompany = async (req, res) => {
 try {
-  const {role}=req.user
-console.log(" this is the role in company  create ",role);
+  const {type}=req.user
 
-   if (role!=="PLATFORM_ADMIN") {
+   if (type!=="MASTER_ADMIN") {
     return res.status(401).json({sucess:false,
       message:" You Cant Company u dont have authority"
     });
