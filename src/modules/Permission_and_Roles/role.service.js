@@ -30,11 +30,50 @@ export const getAllRoles = async (companyId) => {
 
   
 export const getCompanyRoles = async (companyId) => {
-  console.log(" the methos in service for company role" );
+
   
   if (!companyId) throw new Error("companyId is required");
   return prisma.role.findMany({
     where: { companyId },
+  });
+};
+
+export const getRoleUsers = async (roleId) => {
+  return prisma.role.findUnique({
+    where: { id: roleId },
+    include: {
+      users: {
+        select: {
+          userId: true,
+          name: true,
+          email: true,
+          phone:true
+        },
+      },
+    },
+  }).then(role => role?.users || []);
+};
+
+
+
+export const assignUsersToRole = async (roleId, userIds) => {
+  // Update all given users with this roleId
+  await prisma.user.updateMany({
+    where: { userId: { in: userIds } },
+    data: { roleId },
+  });
+
+  // Return updated users (only safe fields)
+  return prisma.user.findMany({
+    where: { userId: { in: userIds } },
+    select: {
+      id: true,
+      userId: true,   // you have userId field (unique string)
+      name: true,
+      email: true,
+      phone: true,
+      roleId: true,
+    },
   });
 };
 

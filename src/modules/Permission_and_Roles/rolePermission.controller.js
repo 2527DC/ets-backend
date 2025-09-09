@@ -2,31 +2,33 @@ import * as rolePermissionService from './rolePermission.service.js';
 
 // Create RolePermission
 
-export const createRolePermission = async (req, res) => {
+export const createRoleWithPermissions = async (req, res) => {
   try {
-    const { roleId, moduleId, canRead, canWrite, canDelete } = req.body;
-
-    if (!roleId || !moduleId) {
-      return res.status(400).json({ message: 'roleId and moduleId are required' });
+    const { name, isAssignable, isSystemLevel, permissions } = req.body;
+const {companyId}=req.user
+    if (!name ) {
+      return res.status(400).json({ message: "name and companyId are required" });
     }
 
-    const permissions = await rolePermissionService.createRolePermissionWithChildren({
-      roleId,
-      moduleId,
-      canRead: !!canRead,
-      canWrite: !!canWrite,
-      canDelete: !!canDelete
+    // permissions should be an array of { moduleKey, canRead, canWrite, canDelete }
+    const role = await rolePermissionService.createRoleWithPermissions({
+      name,
+      companyId,
+      isAssignable: isAssignable ?? true,
+      isSystemLevel: isSystemLevel ?? false,
+      permissions: permissions || [],
     });
 
     return res.status(201).json({
-      message: 'Role permissions created successfully',
-      created: permissions
+      message: "Role created successfully with permissions",
+      role,
     });
   } catch (err) {
-    console.error('Create RolePermission error:', err);
-    return res.status(500).json({ message: err.message || 'Something went wrong' });
+    console.error("Create Role error:", err);
+    return res.status(500).json({ message: err.message || "Something went wrong" });
   }
 };
+
 
 
 // Get all RolePermissions

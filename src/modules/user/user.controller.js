@@ -271,19 +271,21 @@ export const searchEmployees = async (req, res) => {
       return res.status(400).json({ error: "Search query (q) is required" });
     }
 
+    const {companyId}=req.user
+
     const employees = await userService.searchEmployees(
       q,
-      isActive !== undefined ? isActive === "true" : undefined
+      isActive !== undefined ? isActive === "true" : undefined ,companyId
     );
 
     // Format the response
     const formattedEmployees = employees.map(emp => ({
-      id: emp.id,
+      id: emp.userId,
       employeeCode: emp.userId,
       name: emp.name,
       email: emp.email,
       phone: emp.phone,
-      alternativePhone: emp.alternative_phone,
+      alternativePhone: emp.alternativePhone,
       gender: emp.gender,
       type: emp.type,
       isActive: emp.isActive,
@@ -319,3 +321,43 @@ export const searchEmployees = async (req, res) => {
   }
 };
 
+
+// Search users by name, email, or phone number
+export const searchUsers = async (req, res) => {
+  try {
+    const { query } = req.query;
+    
+    if (!query || query.trim().length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: 'Search query must be at least 2 characters long'
+      });
+    }
+
+    const searchTerm = query.trim().toLowerCase();
+    
+    // Assuming you have a User model
+    const users = await User.find({
+      $or: [
+        { name: { $regex: searchTerm, $options: 'i' } },
+        { email: { $regex: searchTerm, $options: 'i' } },
+        { phone: { $regex: searchTerm, $options: 'i' } }
+      ],
+      companyId: req.user.companyId // Only search within user's company
+    }).select('name email phone department role status createdAt')
+      .limit(50); // Limit results for performance
+
+    res.status(200).json({
+      success: true,
+      data: users,
+      count: users.length
+    });
+
+  } catch (error) {
+    console.error('Search users error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};

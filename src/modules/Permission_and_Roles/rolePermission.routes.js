@@ -1,11 +1,11 @@
 import express from 'express';
 import {
-  createRolePermission,
   getAllRolePermissions,
   deleteRolePermission,
   getRolePermissionsByRoleId,
   getUserPermissions,
-  updateRolePermissionsController
+  updateRolePermissionsController,
+  createRoleWithPermissions
 } from './rolePermission.controller.js';
 import { authenticate } from '../../middlewares/auth.middleware.js';
 
@@ -14,7 +14,7 @@ const router = express.Router();
 
 router.use(authenticate); 
 // POST /api/role-permissions
-router.post('/', createRolePermission);
+router.post('/', createRoleWithPermissions);
 
 // GET /api/role-permissions
 router.get('/', getAllRolePermissions);

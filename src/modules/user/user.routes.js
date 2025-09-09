@@ -20,11 +20,11 @@ router.get('/company-departments', controller.getCompanyDepartments); // ✅ Cha
 router.post('/employees/bulk-upload', upload.single('file'), controller.uploadEmployees);
 
 // --- EMPLOYEE CRUD ---
-router.post('/employee',checkPermission('manage-team.write'),validate(CreateUserSchema),controller.createEmployee);
+router.post('/employee',checkPermission('department_management.write'),validate(CreateUserSchema),controller.createEmployee);
 router.put('/employee/:id',checkPermission('manage-team.write'),validate(UpdateUserSchema), controller.updateEmployee);
 
 router.get('/department-employees/:id', controller.getEmployeesByDepartments); 
-router.get("/employee/search", controller.searchEmployees);
+router.get("/employees/search", controller.searchEmployees);
 
 router.get('/employees', controller.getAllEmployees); 
 // ❗️Dynamic routes must come last to avoid conflict
@@ -33,5 +33,4 @@ router.delete('/delete-departments/:id', controller.deleteDepartments);
     
 router.get('/employee/:id', controller.getEmployeeById);
 router.delete('/employee/:id', controller.deleteEmployee);
-
 export default router;

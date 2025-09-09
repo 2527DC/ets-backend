@@ -459,7 +459,7 @@ const getEmployeesByDepartments = async (teamId, isActive) => {
         isActive: true,
         type: true,
         landmark: true,
-        alternative_phone: true,
+        alternativePhone: true,
 
         // ✅ Direct relation to WeekOff
         weekOff: {
@@ -523,10 +523,11 @@ const getEmployeesByDepartments = async (teamId, isActive) => {
 };
 
 
-const searchEmployees = async (query, isActive) => {
+const searchEmployees = async (query, isActive ,companyId) => {
   return prisma.user.findMany({
     where: {
       AND: [
+        { companyId },
         {
           OR: [
             { name: { contains: query, mode: "insensitive" } },

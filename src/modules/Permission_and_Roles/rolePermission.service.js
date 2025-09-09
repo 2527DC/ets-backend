@@ -1,38 +1,56 @@
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
-import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 
-export const createRolePermissionWithChildren = async ({ roleId, moduleId, canRead, canWrite, canDelete }) => {
-  // Create parent module permission
-  const createdPermissions = [];
-
-  const parentPermission = await prisma.rolePermission.create({
-    data: { roleId, moduleId, canRead, canWrite, canDelete }
-  });
-  createdPermissions.push(parentPermission);
-
-  // Find child modules
-  const childModules = await prisma.module.findMany({
-    where: { parentId: moduleId }
-  });
-
-  for (const child of childModules) {
-    const childPermission = await prisma.rolePermission.create({
+export const createRoleWithPermissions = async ({
+  name,
+  companyId,
+  isAssignable,
+  isSystemLevel,
+  permissions,
+}) => {
+  return await prisma.$transaction(async (tx) => {
+    // Create the role
+    const role = await tx.role.create({
       data: {
-        roleId,
-        moduleId: child.id,
-        canRead,
-        canWrite,
-        canDelete
-      }
+        name,
+        companyId,
+        isAssignable,
+        isSystemLevel,
+      },
     });
-    createdPermissions.push(childPermission);
-  }
 
-  return createdPermissions; 
+    // If permissions are provided, resolve module IDs from moduleKey
+    if (permissions.length > 0) {
+      for (const perm of permissions) {
+        const module = await tx.module.findUnique({
+          where: { key: perm.moduleKey },
+        });
+
+        if (!module) {
+          throw new Error(`Module with key '${perm.moduleKey}' not found`);
+        }
+
+        await tx.rolePermission.create({
+          data: {
+            roleId: role.id,
+            moduleId: module.id,
+            canRead: !!perm.canRead,
+            canWrite: !!perm.canWrite,
+            canDelete: !!perm.canDelete,
+          },
+        });
+      }
+    }
+
+    // Return role with its permissions
+    return await tx.role.findUnique({
+      where: { id: role.id },
+      include: { rolePermissions: { include: { module: true } } },
+    });
+  });
 };
+
 
 export const getAllRolePermissions = () => prisma.rolePermission.findMany({ include: { module: true, role: true } });
 
@@ -140,3 +158,7 @@ export const getPermissionsFromToken = async (companyId, roleId) => {
     throw new Error("Failed to get permissions: " + err.message);
   }
 };
+
+
+
+

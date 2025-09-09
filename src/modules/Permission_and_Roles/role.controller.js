@@ -76,3 +76,62 @@ export const deleteRole = async (req, res) => {
     res.status(500).json({ error: 'Failed to delete role' });
   }
 };
+
+
+// controllers/roleController.js
+
+export const getRoleUsers = async (req, res) => {
+  try {
+    const { roleId } = req.params;
+
+    const users = await roleService.getRoleUsers(parseInt(roleId, 10));
+
+    return res.json({
+      success: true,
+      roleId,
+      total: users.length,
+      users,
+    });
+  } catch (error) {
+    console.error("Error fetching role users:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch role users",
+      error: error.message,
+    });
+  }
+};
+
+
+export const assignUsersToRole = async (req, res) => {
+  try {
+    const { roleId } = req.params;
+    const { userIds } = req.body;
+
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "userIds array is required",
+      });
+    }
+
+    const updatedUsers = await roleService.assignUsersToRole(
+      parseInt(roleId, 10),
+      userIds
+    );
+
+    return res.json({
+      success: true,
+      message: "Users assigned to role successfully",
+      totalAssigned: updatedUsers.length,
+      users: updatedUsers,
+    });
+  } catch (error) {
+    console.error("Error assigning users to role:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to assign users to role",
+      error: error.message,
+    });
+  }
+};
