@@ -350,32 +350,35 @@ const getCompanyDepartments = async (companyId) => {
       where: { companyId },
       include: {
         _count: {
-          select: {
-            users: true, // Total users
-            users: {
-              where: {
-                isActive: true
-              }
-            },
-          },
+          select: { users: true }
         },
+        users: {
+          select: { isActive: true }
+        }
       },
     });
 
-    return departments.map((dept) => ({
-      id: dept.id,
-      name: dept.name,
-      companyId: dept.companyId,
-      description: dept.description,
-      totalUsers: dept._count.users, // Total count
-      activeUsers: dept._count.users, // Active count (this might need adjustment based on Prisma's count structure)
-      inactiveUsers: dept._count.users - dept._count.users, // Calculate inactive
-    }));
+    return departments.map((dept) => {
+      const totalUsers = dept._count.users;
+      const activeUsers = dept.users.filter(u => u.isActive).length;
+      const inactiveUsers = totalUsers - activeUsers;
+
+      return {
+        id: dept.id,
+        name: dept.name,
+        companyId: dept.companyId,
+        description: dept.description,
+        totalUsers,
+        activeUsers,
+        inactiveUsers,
+      };
+    });
   } catch (err) {
-    console.error('Error fetching company teams:', err);
-    throw new Error('Failed to fetch company teams');
+    console.error('Error fetching company departments:', err);
+    throw new Error('Failed to fetch company departments');
   }
 };
+
 
 const updateDepartments = async (id, data, userEmail) => {
   try {
@@ -546,7 +549,37 @@ const searchEmployees = async (query, isActive ,companyId) => {
   });
 };
 
+
+
+
+export const toggleIsActiveStatusService = async ({ userId, status }) => {
+  try {
+    const updatedUser = await prisma.user.update({
+      where: { userId },
+      data: { isActive: status },
+    });
+
+    return updatedUser;
+  } catch (error) {
+    // Prisma known request errors
+      if (error.code === "P2025") {
+        // Record not found
+        const err = new Error(`User with userId "${userId}" not found`);
+        err.statusCode = 404;
+        throw err;
+    }
+
+    const err = new Error("Failed to update user status");
+    err.statusCode = 500;
+    throw err;
+  }
+};
+
+
+
+
 export default {
+  toggleIsActiveStatusService,
   createEmployee,searchEmployees,
   getAllEmployees,
   getEmployeeById,
@@ -559,3 +592,5 @@ export default {
   ,deleteDepartments,
   getEmployeesByDepartments
 };
+
+

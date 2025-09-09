@@ -22,6 +22,9 @@ router.post('/employees/bulk-upload', upload.single('file'), controller.uploadEm
 // --- EMPLOYEE CRUD ---
 router.post('/employee',checkPermission('department_management.write'),validate(CreateUserSchema),controller.createEmployee);
 router.put('/employee/:id',checkPermission('manage-team.write'),validate(UpdateUserSchema), controller.updateEmployee);
+// toggle the emoployee status 
+
+router.patch("/status-update/:userId", controller.toggleIsActiveStatusController);
 
 router.get('/department-employees/:id', controller.getEmployeesByDepartments); 
 router.get("/employees/search", controller.searchEmployees);
