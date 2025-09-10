@@ -25,3 +25,28 @@ export const createBookings = async ({ userId, companyId, shiftId, bookingType, 
 
   return bookings;
 };
+
+
+
+export const getBookingsByDateService = async ({ companyId, date }) => {
+  const bookings = await prisma.booking.findMany({
+    where: {
+      companyId,
+     
+      scheduledTime: {
+        equals: new Date(date), // this will only match exactly midnight times
+      },
+    },
+    orderBy: {
+      scheduledTime: "asc",
+    },
+    include: {
+      user: true,
+      shift: true,
+ 
+      routeBookings:true
+    },
+  });
+
+  return bookings;
+};

@@ -476,11 +476,11 @@ model Booking {
 // Route - Transport routes
 model Route {
   id        Int      @id @default(autoincrement())
-  name      String? // Route name/identifier
-  distance  Float    @default(0.0) // Route distance in km
-  vendorId  Int? // Assigned vendor
-  vehicleId Int? // Assigned vehicle
-  shiftId   Int? // Associated shift
+  name      String? 
+  distance  Float    @default(0.0) 
+  vendorId  Int? 
+  vehicleId Int? 
+  shiftId   Int? 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -488,17 +488,17 @@ model Route {
   shift         Shift?         @relation(fields: [shiftId], references: [id], onDelete: Cascade)
   vehicle       Vehicle?       @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   vendor        Vendor?        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  routeBookings RouteBooking[] // Bookings assigned to this route
-  trips         Trip[] // Actual trips on this route
+  routeBookings RouteBooking[]
+  trips         Trip[]
 
   @@map("routes")
 }
 
 // RouteBooking - Junction table linking bookings to routes
 model RouteBooking {
-  id        Int      @id @default(autoincrement())
-  routeId   Int // Route reference
-  bookingId Int // Booking reference
+  id        Int      @id @default(autoincrement())  
+  routeId   Int 
+  bookingId Int 
   createdAt DateTime @default(now())
 
   // Relations
@@ -512,13 +512,13 @@ model RouteBooking {
 // Trip - Actual executed trips
 model Trip {
   id        Int        @id @default(autoincrement())
-  driverId  Int // Assigned driver
-  vendorId  Int // Managing vendor
-  routeId   Int // Trip route
-  createdBy Int // User who created the trip
+  driverId  Int 
+  vendorId  Int 
+  routeId   Int 
+  createdBy Int 
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
-  status    TripStatus // Trip execution status
+  status    TripStatus 
 
   // Relations
   driver  Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
@@ -557,8 +557,8 @@ model CutoffWindow {
 model WeekOff {
   id           Int         @id @default(autoincrement())
   companyId    Int?
-  departmentId Int?        @unique // one per department
-  userId       Int?        @unique // one per user
+  departmentId Int?        @unique 
+  userId       Int?        @unique 
   daysOfWeek   DayOfWeek[]
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
@@ -586,7 +586,7 @@ model AuditLog {
   changedBy String?   @map("changed_by") // User who made the change
   changedAt DateTime? @default(now()) @map("changed_at") @db.Timestamp(6) // When change occurred
 
-  @@map("audit_log") // Custom table name
+  @@map("audit_log")
 }
 
 // =============================================================================
@@ -595,9 +595,9 @@ model AuditLog {
 
 // User classification
 enum UserType {
-  ADMIN // Company administrator
-  SUPER_ADMIN // System administrator
-  EMPLOYEE // Regular employee
+  ADMIN
+  SUPER_ADMIN 
+  EMPLOYEE 
 }
 
 // Gender options
@@ -609,9 +609,9 @@ enum Gender {
 
 // Special accommodation needs
 enum SpecialNeeds {
-  PREGNANT // Pregnancy accommodation
-  DISABLED // Disability accommodation
-  ELDERLY // Elderly passenger accommodation
+  PREGNANT 
+  DISABLED 
+  ELDERLY
 }
 
 // Days of the week for scheduling
@@ -627,62 +627,61 @@ enum DayOfWeek {
 
 // Document verification status
 enum DocumentStatus {
-  PENDING // Awaiting review
-  APPROVED // Verified and accepted
-  REJECTED // Rejected/invalid
+  PENDING 
+  APPROVED 
+  REJECTED 
 }
 
 // Types of documents for compliance
 enum DocumentType {
   // Driver documents
-  LICENSE // Driving license
-  AADHAR // Government ID
-  GOV_ID // Other government ID
-  BGV // Background verification
-  POLICE_VERIFICATION // Police clearance
-  MEDICAL // Medical fitness
-  TRAINING // Training certificates
-  EYE_TEST // Vision test
-  UNDERTAKING // Legal undertaking
-  INDICATION // Medical indication
+  LICENSE 
+  AADHAR 
+  GOV_ID 
+  BGV 
+  POLICE_VERIFICATION 
+  MEDICAL 
+  TRAINING 
+  EYE_TEST
+  UNDERTAKING 
+  INDICATION 
 
   // Vehicle documents
-  RC_CARD // Registration certificate
-  INSURANCE // Vehicle insurance
-  PERMIT // Route permit
-  POLLUTION // Pollution certificate
-  FITNESS // Fitness certificate
-  TAX_RECEIPT // Tax payment receipt
+  RC_CARD 
+  INSURANCE 
+  PERMIT 
+  POLLUTION
+  FITNESS 
+  TAX_RECEIPT 
 }
 
 // Shift timing types
 enum ShiftType {
-  LOGIN // Start of work shift
-  LOGOUT // End of work shift
+  LOGIN
+  LOGOUT 
 }
 
 // Booking purpose classification
 enum BookingType {
-  LOGIN // Transport to work
-  LOGOUT // Transport from work
-  ADHOC // Ad-hoc/emergency transport
+  LOGIN 
+  LOGOUT 
+  ADHOC 
 }
 
 // Booking lifecycle status
 enum BookingStatus {
-  PENDING // Booking created, awaiting assignment
-  ASSIGNED // Assigned to route/vehicle
-  COMPLETED // Trip completed successfully
-  CANCELLED // Booking cancelled
+  PENDING 
+  ASSIGNED 
+  COMPLETED 
+  CANCELLED
 }
 
 // Trip execution status
 enum TripStatus {
-  PENDING // Trip scheduled but not started
-  IN_PROGRESS // Trip currently in progress
-  COMPLETED // Trip finished successfully
-  CANCELLED // Trip cancelled
-}
+  PENDING 
+  IN_PROGRESS 
+  COMPLETED
+  CANCELLED
 
 // Cutoff window rule types
 enum CutoffType {

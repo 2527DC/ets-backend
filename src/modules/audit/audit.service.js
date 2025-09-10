@@ -5,10 +5,10 @@ export const getDepartmentsLogs = async () => {
     try {
         const logs = await prisma.auditLog.findMany({
             where: {
-                table_name: 'department'
+                tableName: 'departments'
             },
             orderBy: {
-                changed_at: 'desc'
+                changedAt: 'desc'
             }
         });
 
@@ -20,8 +20,8 @@ export const getDepartmentsLogs = async () => {
             switch (log.action) {
                 case 'CREATE':
                     actionDescription = `Department created`;
-                    if (log.new_data) {
-                        changes.push(`Created department: ${log.new_data.name || 'Unknown'}`);
+                    if (log.newData) {
+                        changes.push(`Created department: ${log.newData.name || 'Unknown'}`);
                     }
                     break;
 
@@ -29,12 +29,12 @@ export const getDepartmentsLogs = async () => {
                     actionDescription = `Department updated`;
                     
                     // Only show actual changes
-                    if (log.old_data && log.new_data) {
-                        const changesDetected = detectChanges(log.old_data, log.new_data);
+                    if (log.oldData && log.newData) {
+                        const changesDetected = detectChanges(log.oldData, log.newData);
                         changes = changesDetected.length > 0 
                             ? changesDetected 
                             : ['No detectable changes (possible metadata update)'];
-                    } else if (!log.old_data && log.new_data) {
+                    } else if (!log.oldData && log.newData) {
                         changes = ['Initial data populated'];
                     } else {
                         changes = ['Update with incomplete data'];
@@ -43,8 +43,8 @@ export const getDepartmentsLogs = async () => {
 
                 case 'DELETE':
                     actionDescription = `Department deleted`;
-                    if (log.old_data) {
-                        changes.push(`Deleted department: ${log.old_data.name || 'Unknown'}`);
+                    if (log.oldData) {
+                        changes.push(`Deleted department: ${log.oldData.name || 'Unknown'}`);
                     }
                     break;
 
@@ -54,15 +54,15 @@ export const getDepartmentsLogs = async () => {
 
             return {
                 id: log.id,
-                record_id: log.record_id,
+                recordId: log.recordId,
                 action: log.action,
                 action_description: actionDescription,
                 changes: changes,
-                changed_by: log.changed_by || 'unknown',
-                changed_at: log.changed_at,
+                changedBy: log.changedBy || 'unknown',
+                changedAt: log.changedAt,
                 details: {
-                    old_data: log.old_data,
-                    new_data: log.new_data
+                    oldData: log.oldData,
+                    newData: log.newData
                 }
             };
         });
