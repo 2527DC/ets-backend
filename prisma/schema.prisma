@@ -189,13 +189,13 @@ model User {
 
 // Role - User roles for permission management
 model Role {
-  id        Int      @id @default(autoincrement())
-  name      String // Role name (e.g., "Admin", "Manager", "Employee")
-  companyId Int // Company-specific roles
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  isAssignable   Boolean @default(true)    
-  isSystemLevel   Boolean @default(false)    
+  id              Int              @id @default(autoincrement())
+  name            String // Role name (e.g., "Admin", "Manager", "Employee")
+  companyId       Int // Company-specific roles
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  isAssignable    Boolean          @default(true)
+  isSystemLevel   Boolean          @default(false)
   // Relations
   company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   rolePermissions RolePermission[] // Permissions assigned to this role
@@ -206,20 +206,20 @@ model Role {
 
 // Module - System modules/features for permission control
 model Module {
-  id        Int      @id @default(autoincrement())
-  name      String   // Module display name
-  key       String   @unique 
-  isActive  Boolean  @default(true) 
-  isRestricted Boolean @default(false)
-  createdAt DateTime @default(now())  
-  updatedAt DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  name         String // Module display name
+  key          String   @unique
+  isActive     Boolean  @default(true)
+  isRestricted Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // Relations
-  rolePermissions RolePermission[] // Permissions granted on this module
+  rolePermissions  RolePermission[] // Permissions granted on this module
+  VendorPermission VendorPermission[]
 
   @@map("modules")
 }
-
 
 // RolePermission - Junction table for role-based access control (RBAC)
 model RolePermission {
@@ -284,7 +284,7 @@ model VendorUser {
   phone     String?  @unique
   password  String
   isActive  Boolean  @default(true)
-  type         String   @default("STANDARD")
+  type      String   @default("STANDARD")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -295,18 +295,37 @@ model VendorUser {
   @@map("vendor_users")
 }
 
-// Vendor Roles - Roles specific to vendor panel
-model VendorRole {
-  id          Int      @id @default(autoincrement())
-  name        String // Role name (e.g., "Vendor Admin", "Vendor Manager", "Driver Manager")
-  vendorId    Int // Vendor-specific roles
-  permissions Json? // Vendor-specific permissions as JSON
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+// VendorPermission - Permissions assigned to a VendorRole
+model VendorPermission {
+  id           Int      @id @default(autoincrement())
+  vendorRoleId Int
+  moduleId     Int
+  canRead      Boolean  @default(false)
+  canWrite     Boolean  @default(false)
+  canDelete    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // Relations
-  vendor      Vendor       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  vendorUsers VendorUser[] // Vendor users with this role
+  vendorRole VendorRole @relation(fields: [vendorRoleId], references: [id], onDelete: Cascade)
+  module     Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorRoleId, moduleId], name: "unique_vendorRole_module")
+  @@map("vendor_permissions")
+}
+
+// Vendor Roles - Roles specific to vendor panel
+model VendorRole {
+  id        Int      @id @default(autoincrement())
+  name      String // Role name (e.g., "Vendor Admin", "Vendor Manager")
+  vendorId  Int // Vendor-specific roles
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  vendor            Vendor             @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  vendorUsers       VendorUser[] // Vendor users with this role
+  vendorPermissions VendorPermission[] // Permissions assigned to this role
 
   @@map("vendor_roles")
 }

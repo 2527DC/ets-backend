@@ -51,18 +51,24 @@ export const getCompanyById = async (req, res) => {
   }
 };
 
+
 // Update company
 export const updateCompany = async (req, res) => {
   try {
     const companyId = parseInt(req.params.id, 10);
-    const { name, email, phone, address, isActive } = req.body;
-    const updatedCompany = await companyService.updateCompany(companyId, { name, email, phone, address, isActive });
-    return res.json(updatedCompany);
+    const { company, adminUser, permissions } = req.body;
+
+    const result = await companyService.updateCompany(companyId, company, adminUser, permissions);
+
+    return res.json(result);
   } catch (err) {
-    console.error(err);
-    return res.status(err.status || 500).json({ message: err.message || "Something went wrong" });
+    console.error("❌ Update Company Error:", err);
+    return res
+      .status(err.status || 500)
+      .json({ message: err.message || "Something went wrong" });
   }
 };
+
 
 // Delete company
 export const deleteCompany = async (req, res) => {

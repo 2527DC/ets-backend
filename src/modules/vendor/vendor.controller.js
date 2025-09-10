@@ -13,9 +13,7 @@ export const createVendor = async (req, res) => {
         message: "You cannot create a vendor, you don't have authority",
       });
     }
-
     const { vendor: vendorData, adminUser, permissions = [] } = req.body;
-
     console.log("Request payload user info:", req.user);
 
     // 🚀 Call service
@@ -24,7 +22,6 @@ export const createVendor = async (req, res) => {
       adminUser,
       permissions
     );
-
     // ✅ Structured response (similar to company)
     return res.status(201).json({
       success: true,

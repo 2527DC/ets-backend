@@ -4,11 +4,9 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 
-
 export const createVendor = async (vendorData, adminUser = null, permissions = []) => {
-  const { licenseNumber, gstNumber, phone, email, ...vendorDetails } = vendorData;
-
-  // 1️⃣ Check for duplicate vendor fields
+  const {name,email,phone,address,licenseNumber,gstNumber,isActive} = vendorData;
+  // Check if vendor already exists
   const existingVendor = await prisma.vendor.findFirst({
     where: {
       OR: [
@@ -29,27 +27,24 @@ export const createVendor = async (vendorData, adminUser = null, permissions = [
         : existingVendor.phone === phone
         ? "phone"
         : "email";
-    const err = new Error(`Vendor with same ${field} already exists`);
-    err.status = 409;
-    throw err;
+    throw { status: 409, message: `Vendor with same ${field} already exists` };
   }
 
-  // 2️⃣ Start transaction
   return await prisma.$transaction(async (tx) => {
-    // Create Vendor
+    // 1. Create Vendor
     const newVendor = await tx.vendor.create({
       data: {
-        ...vendorDetails,
+        name,
+        email,
+        phone,
+        address,
         licenseNumber: licenseNumber || null,
         gstNumber: gstNumber || null,
-        phone: phone || null,
-        email: email || null,
-        isActive: vendorData.isActive ?? true,
-        onboardedAt: vendorData.onboardedAt ?? new Date(),
+        isActive: isActive ?? true,
       },
     });
 
-    // Create default role: Vendor Admin
+    // 2. Create default role: Vendor Admin
     const newRole = await tx.vendorRole.create({
       data: {
         name: "Vendor Admin",
@@ -57,17 +52,13 @@ export const createVendor = async (vendorData, adminUser = null, permissions = [
       },
     });
 
-    // Create admin user if provided
+    // 3. Create admin user if provided
     let newVendorUser = null;
     if (adminUser?.password) {
       const existingAdmin = await tx.vendorUser.findUnique({
         where: { email: adminUser.email },
       });
-      if (existingAdmin) {
-        const err = new Error("Vendor admin with this email already exists");
-        err.status = 409;
-        throw err;
-      }
+      if (existingAdmin) throw { status: 409, message: "Vendor admin with this email already exists" };
 
       const hashedPassword = await bcrypt.hash(adminUser.password, 10);
       newVendorUser = await tx.vendorUser.create({
@@ -84,29 +75,34 @@ export const createVendor = async (vendorData, adminUser = null, permissions = [
       });
     }
 
-    // Handle permissions if provided
-    if (permissions.length > 0) {
-      const moduleKeys = permissions.map((p) => p.moduleKey);
-      const modules = await tx.module.findMany({
-        where: { key: { in: moduleKeys } },
-      });
+    // 4. Fetch modules by keys
+    const moduleKeys = permissions.map((p) => p.moduleKey);
+    const modules = await tx.module.findMany({
+      where: {
+        key: { in: moduleKeys },
+      },
+    });
 
-      const permissionsData = permissions.map((perm) => {
-        const matchedModule = modules.find((m) => m.key === perm.moduleKey);
-        if (!matchedModule) throw new Error(`Invalid moduleKey: ${perm.moduleKey}`);
-        return {
-          roleId: newRole.id,
-          moduleId: matchedModule.id,
-          canRead: perm.canRead,
-          canWrite: perm.canWrite,
-          canDelete: perm.canDelete,
-        };
-      });
+    // 5. Prepare permissions for role
+    const permissionsData = permissions.map((perm) => {
+      const matchedModule = modules.find((m) => m.key === perm.moduleKey);
+      if (!matchedModule) throw new Error(`Invalid moduleKey: ${perm.moduleKey}`);
 
-      await tx.vendorRolePermission.createMany({ data: permissionsData });
+      return {
+        vendorRoleId: newRole.id,
+        moduleId: matchedModule.id,
+        canRead: perm.canRead ?? false,
+        canWrite: perm.canWrite ?? false,
+        canDelete: perm.canDelete ?? false,
+      };
+    });
+
+    // 6. Create permissions
+    if (permissionsData.length > 0) {
+      await tx.vendorPermission.createMany({ data: permissionsData });
     }
 
-    // ✅ Return full objects like company creation
+    // ✅ Return nested structure
     return {
       vendor: newVendor,
       adminUser: newVendorUser,
@@ -114,6 +110,8 @@ export const createVendor = async (vendorData, adminUser = null, permissions = [
     };
   });
 };
+
+
 
 
 

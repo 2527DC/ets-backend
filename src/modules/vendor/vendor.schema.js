@@ -15,10 +15,6 @@ export const CreateVendorSchema = z.object({
     licenseNumber: z.string().optional().nullable(),
     gstNumber: z.string().optional().nullable(),
     isActive: z.boolean().optional(),
-    onboardedAt: z.coerce.date({
-      required_error: "Onboarded date is required",
-      invalid_type_error: "Invalid date format",
-    }),
   }),
   adminUser: z.object({
     name: z.string().min(1, "Admin name is required"),
