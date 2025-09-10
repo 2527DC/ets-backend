@@ -20,8 +20,8 @@ router.get('/company-departments', controller.getCompanyDepartments); // ✅ Cha
 router.post('/employees/bulk-upload', upload.single('file'), controller.uploadEmployees);
 
 // --- EMPLOYEE CRUD ---
-router.post('/employee',checkPermission('department_management.write'),validate(CreateUserSchema),controller.createEmployee);
-router.put('/employee/:id',checkPermission('department_management.write'),validate(UpdateUserSchema), controller.updateEmployee);
+router.post('/employee',validate(CreateUserSchema),controller.createEmployee);
+router.put('/employee/:id',validate(UpdateUserSchema), controller.updateEmployee);
 // toggle the emoployee status 
 
 router.patch("/status-update/:userId", controller.toggleIsActiveStatusController);

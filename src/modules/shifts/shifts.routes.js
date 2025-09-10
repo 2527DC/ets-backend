@@ -14,7 +14,7 @@ router.delete('/categories/:categoryId', controller.deleteShiftCategory);
 
 // Shift Routes
 router.post('/create', controller.createShift);
-router.get('/shifts', controller.getShifts);
+router.get('/get-shifts', controller.getShifts);
 router.get('/shifts/:shiftId', controller.getShift);
 router.put('/shifts/:shiftId', controller.updateShift);
 router.delete('/shifts/:shiftId', controller.deleteShift);

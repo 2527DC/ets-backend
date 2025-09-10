@@ -12,16 +12,26 @@ export const createShiftCategory = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
-
 export const getShiftCategories = async (req, res) => {
   try {
     const { companyId } = req.user;
     const categories = await service.getCompanyShiftCategories(companyId);
-    res.status(200).json(categories);
+
+    res.status(200).json({
+      success: true,
+      message: "Shift categories fetched successfully",
+      data: { categories: categories || [] },
+      count: categories.length,
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message || "Failed to fetch shift categories",
+      error: err, 
+    });
   }
 };
+
 
 export const getShiftCategory = async (req, res) => {
   try {
