@@ -21,6 +21,8 @@ import path from "path";
 import seedRoutes from "./src/seed/modules.seed.js";
 import { truncateTable } from "./src/utils/truncateTable.js";
 import bookingRoutes from './src/modules/booking/booking.routes.js';
+import companyVendorRoutes from './src/modules/Assigning/companyVendor.routes.js'
+
 
 import  productAdmin from './src/modules/admin/admin.routes.js' ;
 
@@ -106,6 +108,8 @@ app.use("/api/companies", companyRoutes);
 app.use("/api/vehicles", vehicleRoutes);
 app.use("/api/vendors", vendorRoutes);
 app.use("/api", cutOffWindowsRoutes);
+app.use("/api", companyVendorRoutes);
+
 // ✅ 404 Handler (must be at the end)
 app.use((req, res) => {
   res.status(404).json({ message: "❌ Route not found" });
