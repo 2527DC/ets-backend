@@ -76,7 +76,6 @@ export const assignCompaniesToVendor = async (req, res) => {
 };
 
 
-
 // 3️⃣ Get vendors assigned to a company
 export const getVendorsByCompany = async (req, res) => {
   try {
@@ -84,36 +83,28 @@ export const getVendorsByCompany = async (req, res) => {
 
     const vendors = await companyVendorService.getVendorsByCompanyService(Number(companyId));
 
-    if (!vendors || vendors.length === 0) {
-      return res.status(404).json({ success: false, message: "No vendors found for this company" });
-    }
-
-    return res.status(200).json({ success: true, vendors });
+    // Always return an array, even if empty
+    return res.status(200).json({ success: true, vendors: vendors || [] });
   } catch (err) {
     console.error("❌ getVendorsByCompany error:", err);
     return res.status(err.status || 500).json({ message: err.message || "Failed to fetch vendors" });
   }
 };
 
-
-
+// 4️⃣ Get companies assigned to a vendor
 export const getCompaniesByVendor = async (req, res) => {
   try {
     const { vendorId } = req.params;
 
-  const companies = await companyVendorService.getCompaniesByVendorService(Number(vendorId));
+    const companies = await companyVendorService.getCompaniesByVendorService(Number(vendorId));
 
-    if (!companies || companies.length === 0) {
-      return res.status(404).json({ success: false, message: "No companies assigned to this vendor" });
-    }
-
-    return res.status(200).json({ success: true, companies });
+    // Always return an array, even if empty
+    return res.status(200).json({ success: true, companies: companies || [] });
   } catch (err) {
     console.error("❌ getCompaniesByVendor error:", err);
     return res.status(err.status || 500).json({ message: err.message || "Failed to fetch companies" });
   }
 };
-
 
 // 5️⃣ Remove a vendor from a company
 export const removeVendorFromCompany = async (req, res) => {

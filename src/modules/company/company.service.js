@@ -36,7 +36,7 @@ const createCompany = async ( companydata, adminUser, permissions ) => {
         password: hashedPassword,
         companyId: newCompany.id,
         roleId: newRole.id,
-        type:"SUPER ADMIN"
+        type:"ADMIN"
       }
     });
 
