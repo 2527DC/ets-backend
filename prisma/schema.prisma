@@ -682,7 +682,7 @@ enum TripStatus {
   IN_PROGRESS 
   COMPLETED
   CANCELLED
-
+}
 // Cutoff window rule types
 enum CutoffType {
   BOOKING_CREATION

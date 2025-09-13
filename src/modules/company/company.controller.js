@@ -6,11 +6,11 @@ export const createCompany = async (req, res) => {
 try {
   const {type}=req.user
 
-   if (type!=="MASTER_ADMIN") {
-    return res.status(401).json({sucess:false,
-      message:" You Cant Company u dont have authority"
-    });
-   }
+  //  if (type!=="MASTER_ADMIN") {
+  //   return res.status(401).json({sucess:false,
+  //     message:" You Cant Company u dont have authority"
+  //   });
+  //  }
     const { company: companydata, adminUser,  permissions } = req.body;
 console.log(" this is the Req atta payloud " ,req.user);
 
